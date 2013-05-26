@@ -1,63 +1,88 @@
 class Draggable
-  _mousePos = new MousePos
 
-  constructor: (el, @grid, @marginx) ->
-    @$el = $(el)
+  @create: (el, opts = {}) ->
+    grid = opts.grid
+    margin = opts.margin
+
+    if grid
+      new SnapDraggable(el, grid.x, grid.y, margin.x, margin.y)
+    else
+      new Draggable(el)
+
+  constructor: (el) ->
+    @el = $(el).get(0)
+    @mousePos = new MousePos
 
     @setCssAbsolute()
     @initEvents()
 
   setCssAbsolute: ->
-    $el = @$el
-    position = $el.position()
+    el = @el
+    position = $(el).position()
 
-    $el.css
-      position: 'absolute'
-      left: position.left
-      top: position.top
+    el.style.position = 'absolute'
+    el.style.left = position.left + 'px'
+    el.style.top = position.top + 'px'
 
   initEvents: ->
-    $el = @$el
+    $DOCUMENT.mouseup => @mousePos.stopRecording()
 
-    $(document).mouseup -> _mousePos.stopRecording()
+    $(@el).mousedown (event) =>
+      @mousePos.record @getMousemoveCB(event.pageX, event.pageY)
 
-    $el.mousedown (e) =>
-      position = $el.position()
-      # TODO: rename
-      startPosLeft = e.pageX - position.left
-      startPosTop = e.pageY - position.top
+      false  # Prevent selection highlighting
 
-      if @grid
-        grid = @grid
-        marginx = @marginx
-        gridHalf = grid / 2
+  getMousemoveCB: (mousex, mousey) ->
+    el = @el
+    position = $(el).position()
 
-        mousemove = (e) ->
-          left = e.pageX - startPosLeft
-          top =  e.pageY - startPosTop
+    startLeft = mousex - position.left
+    startTop = mousey - position.top
 
-          snapx = left % grid
-          snapy = top % grid
+    (event) ->
+      el.style.left = event.pageX - startLeft + 'px'
+      el.style.top = event.pageY - startTop + 'px'
 
-          if snapx >= gridHalf
-            left += grid - snapx
-          else
-            left -= snapx
+class SnapDraggable extends Draggable
+  constructor: (el, @gridx, @gridy, @marginx, @marginy) ->
+    super(el)
 
-          if snapy >= gridHalf
-            top += grid - snapy
-          else
-            top -= snapy
+    #position = $(el).position()
+    #el.style.left = position.left + marginx + 'px'
+    #el.style.top =  position.top + marginy + 'px'
 
-          $el.css
-            left: marginx + left
-            top: marginx + top
+  getMousemoveCB: (mousex, mousey) ->
+    el = @el
+    marginx = @marginx
+    marginy = @marginy
+    gridx = @gridx + marginx
+    gridy = @gridy + marginy
+    gridxHalf = gridx / 2
+    gridyHalf = gridy / 2
+
+    position = $(el).position()
+    startLeft = mousex - position.left
+    startTop = mousey - position.top
+
+    (event) ->
+      left = event.pageX - startLeft
+      top = event.pageY - startTop
+
+      snapx = left % gridx
+      snapy = top % gridy
+
+      if snapx >= gridxHalf
+        left += gridx - snapx
       else
-        mousemove = (e) ->
-          $el.css
-            left: e.pageX - startPosLeft
-            top: e.pageY - startPosTop
+        left -= snapx
 
-      _mousePos.record(mousemove)
+      if snapy >= gridyHalf
+        top += gridy - snapy
+      else
+        top -= snapy
 
-      false  # Prevent selection highlighting.
+      left += marginx
+      top += marginy
+
+      el.style.left = left + 'px'
+      el.style.top =  top + 'px'

@@ -1,12 +1,10 @@
 class MousePos
-  $document = $(document)
-
   constructor: ->
     @onMouseMove = ->
 
   record: (callback) ->
     @onMouseMove = (e) -> callback(e)
-    $document.mousemove(@onMouseMove)
+    $DOCUMENT.mousemove(@onMouseMove)
 
   stopRecording: ->
-    $document.unbind('mousemove', @onMouseMove)
+    $DOCUMENT.unbind('mousemove', @onMouseMove)

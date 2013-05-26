@@ -1,60 +1,81 @@
 class Resizable
-  _mousePos = new MousePos
 
-  constructor: (el, @grid, @marginx) ->
-    @$el = $(el)
+  @create: (el, opts = {}) ->
+    grid = opts.grid
+    margin = opts.margin
+
+    if grid
+      new SnapResizable(el, grid.x, grid.y, margin.x, margin.y)
+    else
+      new Resizable(el)
+
+  constructor: (el) ->
+    @el = $(el).get(0)
+    @mousePos = new MousePos
 
     @addHandle()
     @initEvents()
 
   addHandle: ->
-    @$handle = $('<div class="xxx-handle-se"></div>')
-    @$el.append(@$handle)
+    $(@el).append('<div class="xxx-handle-se"></div>')
 
   initEvents: ->
-    $el = @$el
+    $DOCUMENT.mouseup => @mousePos.stopRecording()
 
-    $(document).mouseup -> _mousePos.stopRecording()
+    $(@el).children('.xxx-handle-se').mousedown (event) =>
+      event.stopPropagation()
 
-    @$handle.mousedown (e) =>
-      e.stopPropagation()
+      @mousePos.record @getMousemoveCB(event.pageX, event.pageY)
 
-      # TODO: rename
-      startWidth = e.pageX - $el.width()
-      startHeight = e.pageY - $el.height()
+      false  # Prevent selection highlighting
 
-      if @grid
-        grid = @grid
-        marginx = @marginx
-        gridHalf = grid / 2
+  getMousemoveCB: (mousex, mousey) ->
+    el = @el
+    $el = $(el)
 
-        mousemove = (e) ->
-          width = e.pageX - startWidth
-          height =  e.pageY - startHeight
+    startLeft = mousex - $el.width()
+    startTop = mousey - $el.height()
 
-          snapx = width % grid
-          snapy = height % grid
+    (event) ->
+      el.style.width = event.pageX - startLeft + 'px'
+      el.style.height = event.pageY - startTop + 'px'
 
-          if snapx >= gridHalf
-            width += grid - snapx
-          else
-            width -= snapx
+class SnapResizable extends Resizable
+  constructor: (el, @gridx, @gridy, @marginx, @marginy) ->
+    super(el)
 
-          if snapy >= gridHalf
-            height += grid - snapy
-          else
-            height -= snapy
+  getMousemoveCB: (mousex, mousey) ->
+    el = @el
+    $el = $(el)
+    marginx = @marginx
+    marginy = @marginy
+    gridx = @gridx
+    gridy = @gridy
+    gridxHalf = gridx / 2
+    gridyHalf = gridy / 2
 
-          $el.css
-            width: (Math.floor(width / grid) - 1) * marginx + width
-            height: (Math.floor(height / grid) - 1) * marginx + height
+    startLeft = mousex - $el.width()
+    startTop = mousey - $el.height()
 
+    (event) ->
+      width = event.pageX - startLeft
+      height = event.pageY - startTop
+
+      snapx = width % gridx
+      snapy = height % gridy
+
+      if snapx >= gridxHalf
+        width += gridx - snapx
       else
-        mousemove = (e) ->
-          $el.css
-            width: e.pageX - startWidth
-            height: e.pageY - startHeight
+        width -= snapx
 
-      _mousePos.record(mousemove)
+      if snapy >= gridyHalf
+        height += gridy - snapy
+      else
+        height -= snapy
 
-      false  # Prevent selection highlighting.
+      width += (Math.floor(width / gridx) - 1) * marginx
+      height += (Math.floor(height / gridy) - 1) * marginy
+
+      el.style.width = width + 'px'
+      el.style.height = height + 'px'
