@@ -1,1 +1,2 @@
+$WINDOW = $(window)
 $DOCUMENT = $(document)

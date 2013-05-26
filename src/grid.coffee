@@ -1,39 +1,70 @@
 class Grid
 
-  constructor: (@el, @gridx, @gridy, @marginx = 0, @marginy = 0) ->
+  constructor: (@containerEl, @gridx, @gridy, @marginx = 0, @marginy = 0) ->
     @grid = []
-    @updateMaxCol()
+    @members = []
 
-  sizeToRowUnit: (size) -> (size - @marginy) / (@marginy + @gridy)
-  sizeToColUnit: (size) -> (size - @marginx) / (@marginx + @gridx)
-  rowUnitToSize: (row) -> (row + 1) * @marginy + row * @gridy
-  colUnitToSize: (col) -> (col + 1) * @marginx + col * @gridx
+    @updateMaxCol()
+    @updateOffsetLeft()
+    @initEvents()
+
+  initEvents: ->
+    $WINDOW.resize =>
+      @updateMaxCol()
+      @updateOffsetLeft()
+
+      @grid = []
+      @append(member) for member in @members
+
+  sizeToRowUnit: (size) ->
+    (size - @offsetLeft - @marginy) / (@marginy + @gridy)
+  sizeToColUnit: (size) ->
+    (size - @marginx) / (@marginx + @gridx)
+  rowUnitToSize: (row) ->
+    (row + 1) * @marginy + row * @gridy
+  colUnitToSize: (col) ->
+    (col + 1) * @marginx + col * @gridx + @offsetLeft
 
   updateMaxCol: ->
-    containerWidth = $(@el).width()
+    containerWidth = $(@containerEl).width()
     @maxCol = Math.floor(@sizeToColUnit(containerWidth)) - 1
 
-  isEmpty: (row, col) ->
-    return true if not @grid[row]
-    return not @grid[row][col]
+  updateOffsetLeft: ->
+    containerWidth = $(@containerEl).width()
+    maxElements = @maxCol + 1
+    gridWidth = maxElements * (@gridx + @marginx) + @marginx
+    @offsetLeft = (containerWidth - gridWidth) / 2
 
-  insertAt: (gridElement, row, col) ->
+  isEmpty: (row, col) ->
+    if not @grid[row]
+      true
+    else
+      not @grid[row][col]
+
+  insertAt: (gridMember, row, col) ->
     @grid[row] = [] if not @grid[row]
 
-    @grid[row][col] = gridElement
-    gridElement.moveTo(row, col)
+    @grid[row][col] = gridMember
+    gridMember.moveTo(row, col)
 
-  append: (gridElement, row = 0, col = 0) ->
+  append: (gridMember, row = 0, col = 0) ->
     if col > @maxCol
-      @append(gridElement, row + 1, 0)
+      @append(gridMember, row + 1, 0)
     else if @isEmpty(row, col)
-      @insertAt(gridElement, row, col)
+      @insertAt(gridMember, row, col)
+      return col
     else
-      @append(gridElement, row, col + 1)
+      @append(gridMember, row, col + 1)
 
-class GridElement
+  addElement: (el, draggable, resizable) ->
+    member = new GridMember(@, el, draggable, resizable)
+    @members.push(member)
+    @append(member)
 
-  constructor: (@el, @grid, @draggable, @resizable) ->
+
+class GridMember
+
+  constructor: (@grid, @el, @draggable, @resizable) ->
     $el = $(el)
 
     @sizex = parseInt $el.data('xxx-sizex'), 10

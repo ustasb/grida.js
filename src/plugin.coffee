@@ -21,4 +21,4 @@ $.fn.grida = (opts) ->
   grid = new Grid(this.get(), grid.x, grid.y, margin.x, margin.y)
 
   for args in gridElArgs.reverse()
-    grid.append new GridElement(args[0], grid, args[1], args[2])
+    grid.addElement(args...)

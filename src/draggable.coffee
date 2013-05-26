@@ -47,10 +47,6 @@ class SnapDraggable extends Draggable
   constructor: (el, @gridx, @gridy, @marginx, @marginy) ->
     super(el)
 
-    #position = $(el).position()
-    #el.style.left = position.left + marginx + 'px'
-    #el.style.top =  position.top + marginy + 'px'
-
   getMousemoveCB: (mousex, mousey) ->
     el = @el
     marginx = @marginx
@@ -61,6 +57,9 @@ class SnapDraggable extends Draggable
     gridyHalf = gridy / 2
 
     position = $(el).position()
+    offsetLeft = position.left % gridx
+    offsetTop = position.top % gridy
+
     startLeft = mousex - position.left
     startTop = mousey - position.top
 
@@ -81,8 +80,8 @@ class SnapDraggable extends Draggable
       else
         top -= snapy
 
-      left += marginx
-      top += marginy
+      left += offsetLeft
+      top += offsetTop
 
       el.style.left = left + 'px'
       el.style.top =  top + 'px'
