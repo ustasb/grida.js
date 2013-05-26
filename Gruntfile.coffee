@@ -10,7 +10,7 @@ module.exports = (grunt) ->
         options:
           join: true
         files:
-          'lib/grida.js': ['src/constants.coffee'
+          'dist/grida.js': ['src/constants.coffee'
                            'src/mouse_position.coffee',
                            'src/draggable.coffee',
                            'src/resizable.coffee',
