@@ -49,6 +49,7 @@ class SnapDraggable extends Draggable
 
   getMousemoveCB: (mousex, mousey) ->
     el = @el
+    $el = $(el)
     marginx = @marginx
     marginy = @marginy
     gridx = @gridx + marginx
@@ -56,12 +57,14 @@ class SnapDraggable extends Draggable
     gridxHalf = gridx / 2
     gridyHalf = gridy / 2
 
-    position = $(el).position()
+    position = $el.position()
     offsetLeft = position.left % gridx
     offsetTop = position.top % gridy
 
     startLeft = mousex - position.left
     startTop = mousey - position.top
+
+    oldPosCombined = 0
 
     (event) ->
       left = event.pageX - startLeft
@@ -82,6 +85,10 @@ class SnapDraggable extends Draggable
 
       left += offsetLeft
       top += offsetTop
+
+      if oldPosCombined isnt left + top
+        $el.trigger('xxx-draggable-snap', [left, top])
+        oldPosCombined = left + top
 
       el.style.left = left + 'px'
       el.style.top =  top + 'px'

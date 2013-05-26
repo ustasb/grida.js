@@ -101,20 +101,22 @@
     }
 
     SnapDraggable.prototype.getMousemoveCB = function(mousex, mousey) {
-      var el, gridx, gridxHalf, gridy, gridyHalf, marginx, marginy, offsetLeft, offsetTop, position, startLeft, startTop;
+      var $el, el, gridx, gridxHalf, gridy, gridyHalf, marginx, marginy, offsetLeft, offsetTop, oldPosCombined, position, startLeft, startTop;
 
       el = this.el;
+      $el = $(el);
       marginx = this.marginx;
       marginy = this.marginy;
       gridx = this.gridx + marginx;
       gridy = this.gridy + marginy;
       gridxHalf = gridx / 2;
       gridyHalf = gridy / 2;
-      position = $(el).position();
+      position = $el.position();
       offsetLeft = position.left % gridx;
       offsetTop = position.top % gridy;
       startLeft = mousex - position.left;
       startTop = mousey - position.top;
+      oldPosCombined = 0;
       return function(event) {
         var left, snapx, snapy, top;
 
@@ -134,6 +136,10 @@
         }
         left += offsetLeft;
         top += offsetTop;
+        if (oldPosCombined !== left + top) {
+          $el.trigger('xxx-draggable-snap', [left, top]);
+          oldPosCombined = left + top;
+        }
         el.style.left = left + 'px';
         return el.style.top = top + 'px';
       };
@@ -305,7 +311,10 @@
       var containerWidth;
 
       containerWidth = $(this.containerEl).width();
-      return this.maxCol = Math.floor(this.sizeToColUnit(containerWidth)) - 1;
+      this.maxCol = Math.floor(this.sizeToColUnit(containerWidth)) - 1;
+      if (this.maxCol < 0) {
+        return this.maxCol = 0;
+      }
     };
 
     Grid.prototype.updateOffsetLeft = function() {
@@ -313,7 +322,7 @@
 
       containerWidth = $(this.containerEl).width();
       maxElements = this.maxCol + 1;
-      gridWidth = maxElements * (this.gridx + this.marginx) + this.marginx;
+      gridWidth = this.marginx + maxElements * (this.gridx + this.marginx);
       return this.offsetLeft = (containerWidth - gridWidth) / 2;
     };
 
@@ -326,11 +335,36 @@
     };
 
     Grid.prototype.insertAt = function(gridMember, row, col) {
+      var currentMember;
+
       if (!this.grid[row]) {
         this.grid[row] = [];
       }
+      this.vacate(gridMember);
+      currentMember = this.grid[row][col];
+      if (currentMember && currentMember !== gridMember) {
+        this.insertAt(currentMember, row + gridMember.sizey, col);
+      }
       this.grid[row][col] = gridMember;
       return gridMember.moveTo(row, col);
+    };
+
+    Grid.prototype.vacate = function(gridMember) {
+      var x, y, _i, _ref, _results;
+
+      _results = [];
+      for (y = _i = 0, _ref = gridMember.sizey; 0 <= _ref ? _i < _ref : _i > _ref; y = 0 <= _ref ? ++_i : --_i) {
+        _results.push((function() {
+          var _j, _ref1, _ref2, _results1;
+
+          _results1 = [];
+          for (x = _j = 0, _ref1 = gridMember.sizex; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; x = 0 <= _ref1 ? ++_j : --_j) {
+            _results1.push((_ref2 = this.grid[gridMember.row + y]) != null ? delete _ref2[gridMember.col + x] : void 0);
+          }
+          return _results1;
+        }).call(this));
+      }
+      return _results;
     };
 
     Grid.prototype.append = function(gridMember, row, col) {
@@ -343,8 +377,7 @@
       if (col > this.maxCol) {
         return this.append(gridMember, row + 1, 0);
       } else if (this.isEmpty(row, col)) {
-        this.insertAt(gridMember, row, col);
-        return col;
+        return this.insertAt(gridMember, row, col);
       } else {
         return this.append(gridMember, row, col + 1);
       }
@@ -371,13 +404,46 @@
       this.draggable = draggable;
       this.resizable = resizable;
       $el = $(el);
-      this.sizex = parseInt($el.data('xxx-sizex'), 10);
-      this.sizey = parseInt($el.data('xxx-sizey'), 10);
+      this.sizex = $el.data('xxx-sizex') || 1;
+      this.sizey = $el.data('xxx-sizey') || 1;
       el.style.width = this.sizex * this.grid.gridx + 'px';
       el.style.height = this.sizey * this.grid.gridy + 'px';
+      this.initEvents();
     }
 
+    GridMember.prototype.initEvents = function() {
+      var $el,
+        _this = this;
+
+      $el = $(this.el);
+      return $el.on('xxx-draggable-snap', function(e, left, top) {
+        var col, row;
+
+        row = Math.round(_this.grid.sizeToRowUnit(top));
+        col = Math.round(_this.grid.sizeToColUnit(left));
+        return _this.grid.insertAt(_this, row, col);
+      });
+    };
+
+    GridMember.prototype.getBelowNeighbors = function() {
+      var neighbor, neighborRow, neighbors, x, _i, _ref;
+
+      neighbors = [];
+      neighborRow = this.row + this.sizey;
+      if (!this.grid.isEmpty(neighborRow, this.col)) {
+        for (x = _i = 0, _ref = this.sizex; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
+          neighbor = this.grid.grid[neighborRow][this.col + x];
+          if (neighbor) {
+            neighbors.push(neighbor);
+          }
+        }
+      }
+      return neighbors;
+    };
+
     GridMember.prototype.moveTo = function(row, col) {
+      this.row = row;
+      this.col = col;
       this.el.style.top = this.grid.rowUnitToSize(row) + 'px';
       return this.el.style.left = this.grid.colUnitToSize(col) + 'px';
     };
