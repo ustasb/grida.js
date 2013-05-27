@@ -265,6 +265,8 @@
       this.gridy = gridy;
       this.marginx = marginx != null ? marginx : 0;
       this.marginy = marginy != null ? marginy : 0;
+      this.maxCol = 0;
+      this.maxRow = 0;
       this.grid = [];
       this.members = [];
       this.updateMaxCol();
@@ -291,27 +293,43 @@
       });
     };
 
-    Grid.prototype.sizeToRowUnit = function(size) {
-      return (size - this.offsetLeft - this.marginy) / (this.marginy + this.gridy);
+    Grid.prototype.topToRowUnit = function(top) {
+      return (top - this.marginy) / (this.marginy + this.gridy);
     };
 
-    Grid.prototype.sizeToColUnit = function(size) {
-      return (size - this.marginx) / (this.marginx + this.gridx);
+    Grid.prototype.leftToColUnit = function(left) {
+      return (left - this.offsetLeft - this.marginx) / (this.marginx + this.gridx);
     };
 
-    Grid.prototype.rowUnitToSize = function(row) {
+    Grid.prototype.rowUnitToTop = function(row) {
       return (row + 1) * this.marginy + row * this.gridy;
     };
 
-    Grid.prototype.colUnitToSize = function(col) {
+    Grid.prototype.colUnitToLeft = function(col) {
       return (col + 1) * this.marginx + col * this.gridx + this.offsetLeft;
+    };
+
+    Grid.prototype.sizeToWidth = function(size) {
+      return size * this.gridx + (size - 1) * this.marginx;
+    };
+
+    Grid.prototype.sizeToHeight = function(size) {
+      return size * this.gridy + (size - 1) * this.marginy;
+    };
+
+    Grid.prototype.widthToSize = function(width) {
+      return (width - this.marginx) / (this.marginx + this.gridx);
+    };
+
+    Grid.prototype.heightToSize = function(height) {
+      return (height - this.marginy) / (this.marginy + this.gridy);
     };
 
     Grid.prototype.updateMaxCol = function() {
       var containerWidth;
 
       containerWidth = $(this.containerEl).width();
-      this.maxCol = Math.floor(this.sizeToColUnit(containerWidth)) - 1;
+      this.maxCol = Math.floor(this.widthToSize(containerWidth)) - 1;
       if (this.maxCol < 0) {
         return this.maxCol = 0;
       }
@@ -326,40 +344,26 @@
       return this.offsetLeft = (containerWidth - gridWidth) / 2;
     };
 
-    Grid.prototype.isEmpty = function(row, col) {
-      if (!this.grid[row]) {
-        return true;
-      } else {
-        return !this.grid[row][col];
-      }
-    };
-
-    Grid.prototype.insertAt = function(gridMember, row, col) {
-      var currentMember;
-
-      if (!this.grid[row]) {
-        this.grid[row] = [];
-      }
-      this.vacate(gridMember);
-      currentMember = this.grid[row][col];
-      if (currentMember && currentMember !== gridMember) {
-        this.insertAt(currentMember, row + gridMember.sizey, col);
-      }
-      this.grid[row][col] = gridMember;
-      return gridMember.moveTo(row, col);
-    };
-
-    Grid.prototype.vacate = function(gridMember) {
-      var x, y, _i, _ref, _results;
+    Grid.prototype.set = function(gridMember, row, col) {
+      var nextRow, x, y, _i, _ref, _results;
 
       _results = [];
       for (y = _i = 0, _ref = gridMember.sizey; 0 <= _ref ? _i < _ref : _i > _ref; y = 0 <= _ref ? ++_i : --_i) {
+        nextRow = row + y;
+        if (!this.grid[nextRow]) {
+          this.grid[nextRow] = [];
+        }
         _results.push((function() {
           var _j, _ref1, _ref2, _results1;
 
           _results1 = [];
           for (x = _j = 0, _ref1 = gridMember.sizex; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; x = 0 <= _ref1 ? ++_j : --_j) {
-            _results1.push((_ref2 = this.grid[gridMember.row + y]) != null ? delete _ref2[gridMember.col + x] : void 0);
+            if (gridMember.row !== null) {
+              if ((_ref2 = this.grid[gridMember.row + y]) != null) {
+                delete _ref2[gridMember.col + x];
+              }
+            }
+            _results1.push(this.grid[nextRow][col + x] = gridMember);
           }
           return _results1;
         }).call(this));
@@ -367,26 +371,61 @@
       return _results;
     };
 
+    Grid.prototype.get = function(row, col) {
+      if (!this.grid[row]) {
+        return null;
+      } else {
+        return this.grid[row][col];
+      }
+    };
+
+    Grid.prototype.isSpaceFree = function(row, col, sizex, sizey) {
+      var x, y, _i, _j;
+
+      for (y = _i = 0; 0 <= sizey ? _i < sizey : _i > sizey; y = 0 <= sizey ? ++_i : --_i) {
+        for (x = _j = 0; 0 <= sizex ? _j < sizex : _j > sizex; x = 0 <= sizex ? ++_j : --_j) {
+          if (this.get(row + y, col + x)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    };
+
+    Grid.prototype.insertAt = function(gridMember, row, col) {
+      this.set(gridMember, row, col);
+      return gridMember.moveTo(row, col);
+    };
+
     Grid.prototype.append = function(gridMember, row, col) {
+      var memberMaxCol, sizex, sizey;
+
       if (row == null) {
         row = 0;
       }
       if (col == null) {
         col = 0;
       }
-      if (col > this.maxCol) {
-        return this.append(gridMember, row + 1, 0);
-      } else if (this.isEmpty(row, col)) {
+      sizex = gridMember.sizex;
+      sizey = gridMember.sizey;
+      memberMaxCol = col + (sizex - 1);
+      if (memberMaxCol > this.maxCol) {
+        if (sizex > (this.maxCol + 1) && this.isSpaceFree(row, col, sizex, sizey)) {
+          return this.insertAt(gridMember, row, 0);
+        } else {
+          return this.append(gridMember, row + 1, 0);
+        }
+      } else if (this.isSpaceFree(row, col, sizex, sizey)) {
         return this.insertAt(gridMember, row, col);
       } else {
         return this.append(gridMember, row, col + 1);
       }
     };
 
-    Grid.prototype.addElement = function(el, draggable, resizable) {
+    Grid.prototype.addElement = function(el) {
       var member;
 
-      member = new GridMember(this, el, draggable, resizable);
+      member = new GridMember(this, el);
       this.members.push(member);
       return this.append(member);
     };
@@ -396,18 +435,17 @@
   })();
 
   GridMember = (function() {
-    function GridMember(grid, el, draggable, resizable) {
+    function GridMember(grid, el) {
       var $el;
 
       this.grid = grid;
       this.el = el;
-      this.draggable = draggable;
-      this.resizable = resizable;
       $el = $(el);
+      this.row = null;
+      this.col = null;
       this.sizex = $el.data('xxx-sizex') || 1;
       this.sizey = $el.data('xxx-sizey') || 1;
-      el.style.width = this.sizex * this.grid.gridx + 'px';
-      el.style.height = this.sizey * this.grid.gridy + 'px';
+      this.resizeTo(this.sizex, this.sizey);
       this.initEvents();
     }
 
@@ -417,11 +455,8 @@
 
       $el = $(this.el);
       return $el.on('xxx-draggable-snap', function(e, left, top) {
-        var col, row;
-
-        row = Math.round(_this.grid.sizeToRowUnit(top));
-        col = Math.round(_this.grid.sizeToColUnit(left));
-        return _this.grid.insertAt(_this, row, col);
+        _this.row = Math.round(_this.grid.topToRowUnit(top));
+        return _this.col = Math.round(_this.grid.leftToColUnit(left));
       });
     };
 
@@ -444,8 +479,15 @@
     GridMember.prototype.moveTo = function(row, col) {
       this.row = row;
       this.col = col;
-      this.el.style.top = this.grid.rowUnitToSize(row) + 'px';
-      return this.el.style.left = this.grid.colUnitToSize(col) + 'px';
+      this.el.style.top = this.grid.rowUnitToTop(row) + 'px';
+      return this.el.style.left = this.grid.colUnitToLeft(col) + 'px';
+    };
+
+    GridMember.prototype.resizeTo = function(sizex, sizey) {
+      this.sizex = sizex;
+      this.sizey = sizey;
+      this.el.style.width = this.grid.sizeToWidth(sizex) + 'px';
+      return this.el.style.height = this.grid.sizeToHeight(sizey) + 'px';
     };
 
     return GridMember;
