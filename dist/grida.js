@@ -218,7 +218,7 @@
     }
 
     SnapResizable.prototype.getMousemoveCB = function(mousex, mousey) {
-      var $el, el, gridx, gridxHalf, gridy, gridyHalf, marginx, marginy, startLeft, startTop;
+      var $el, el, gridx, gridxHalf, gridy, gridyHalf, marginx, marginy, oldSizeCombined, startLeft, startTop;
 
       el = this.el;
       $el = $(el);
@@ -230,6 +230,7 @@
       gridyHalf = gridy / 2;
       startLeft = mousex - $el.width();
       startTop = mousey - $el.height();
+      oldSizeCombined = 0;
       return function(event) {
         var height, snapx, snapy, width;
 
@@ -249,6 +250,10 @@
         }
         width += (Math.floor(width / gridx) - 1) * marginx;
         height += (Math.floor(height / gridy) - 1) * marginy;
+        if (oldSizeCombined !== width + height) {
+          $el.trigger('xxx-resizable-snap', [width, height]);
+          oldSizeCombined = width + height;
+        }
         el.style.width = width + 'px';
         return el.style.height = height + 'px';
       };
@@ -392,6 +397,47 @@
       return true;
     };
 
+    Grid.prototype.getMembersAt = function(row, col, sizex, sizey, members) {
+      var member, tempRow, x, y, _i, _j;
+
+      if (members == null) {
+        members = {};
+      }
+      for (y = _i = 0; 0 <= sizey ? _i < sizey : _i > sizey; y = 0 <= sizey ? ++_i : --_i) {
+        tempRow = row + y;
+        for (x = _j = 0; 0 <= sizex ? _j < sizex : _j > sizex; x = 0 <= sizex ? ++_j : --_j) {
+          member = this.grid[tempRow][col + x];
+          if (member) {
+            members[member.hash] = member;
+          }
+        }
+      }
+      return members;
+    };
+
+    Grid.prototype.getInfluencingMembersBelow = function(row, col, sizex, members) {
+      var maxCol, member, sizey, tempRow, x, y, _i, _j;
+
+      if (sizex == null) {
+        sizex = 1;
+      }
+      if (members == null) {
+        members = {};
+      }
+      sizey = this.grid.length - row;
+      maxCol = col + (sizex - 1);
+      for (y = _i = 0; _i < sizey; y = _i += 1) {
+        tempRow = row + y;
+        for (x = _j = 0; _j < sizex; x = _j += 1) {
+          member = this.get(tempRow, col + x);
+          if (member && members[member.hash] === void 0) {
+            members[member.hash] = member;
+          }
+        }
+      }
+      return members;
+    };
+
     Grid.prototype.insertAt = function(gridMember, row, col) {
       this.set(gridMember, row, col);
       return gridMember.moveTo(row, col);
@@ -435,6 +481,10 @@
   })();
 
   GridMember = (function() {
+    var _count;
+
+    _count = 0;
+
     function GridMember(grid, el) {
       var $el;
 
@@ -445,6 +495,7 @@
       this.col = null;
       this.sizex = $el.data('xxx-sizex') || 1;
       this.sizey = $el.data('xxx-sizey') || 1;
+      this.hash = _count++;
       this.resizeTo(this.sizex, this.sizey);
       this.initEvents();
     }
@@ -454,9 +505,16 @@
         _this = this;
 
       $el = $(this.el);
-      return $el.on('xxx-draggable-snap', function(e, left, top) {
-        _this.row = Math.round(_this.grid.topToRowUnit(top));
-        return _this.col = Math.round(_this.grid.leftToColUnit(left));
+      $el.on('xxx-draggable-snap', function(e, left, top) {
+        var col, row;
+
+        row = Math.round(_this.grid.topToRowUnit(top));
+        col = Math.round(_this.grid.leftToColUnit(left));
+        return _this.grid.insertAt(_this, row, col);
+      });
+      return $el.on('xxx-resizable-snap', function(e, width, height) {
+        _this.sizex = Math.round(_this.grid.widthToSize(width));
+        return _this.sizey = Math.round(_this.grid.heightToSize(height));
       });
     };
 
@@ -465,12 +523,10 @@
 
       neighbors = [];
       neighborRow = this.row + this.sizey;
-      if (!this.grid.isEmpty(neighborRow, this.col)) {
-        for (x = _i = 0, _ref = this.sizex; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
-          neighbor = this.grid.grid[neighborRow][this.col + x];
-          if (neighbor) {
-            neighbors.push(neighbor);
-          }
+      for (x = _i = 0, _ref = this.sizex; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
+        neighbor = this.grid.get(neighbor, this.col + x);
+        if (neighbor) {
+          neighbors.push(neighbor);
         }
       }
       return neighbors;

@@ -57,6 +57,8 @@ class SnapResizable extends Resizable
     startLeft = mousex - $el.width()
     startTop = mousey - $el.height()
 
+    oldSizeCombined = 0
+
     (event) ->
       width = event.pageX - startLeft
       height = event.pageY - startTop
@@ -76,6 +78,10 @@ class SnapResizable extends Resizable
 
       width += (Math.floor(width / gridx) - 1) * marginx
       height += (Math.floor(height / gridy) - 1) * marginy
+
+      if oldSizeCombined isnt width + height
+        $el.trigger('xxx-resizable-snap', [width, height])
+        oldSizeCombined = width + height
 
       el.style.width = width + 'px'
       el.style.height = height + 'px'

@@ -71,10 +71,48 @@ class Grid
     for y in [0...sizey]
       for x in [0...sizex]
         return false if @get(row + y, col + x)
-
     true
 
+  getMembersAt: (row, col, sizex, sizey, members = {}) ->
+    for y in [0...sizey]
+      tempRow = row + y
+
+      for x in [0...sizex]
+        member = @grid[tempRow][col + x]
+        if member
+          members[member.hash] = member  # Ensure a unique list
+
+    members
+
+  getInfluencingMembersBelow: (row, col, sizex = 1, members = {}) ->
+    sizey = @grid.length - row
+    maxCol = col + (sizex - 1)
+
+    for y in [0...sizey] by 1
+      tempRow = row + y
+
+      for x in [0...sizex] by 1
+        member = @get(tempRow, col + x)
+
+        if member and members[member.hash] is undefined
+          members[member.hash] = member  # Ensure a unique list
+
+          #if member.col < col
+            #@getInfluencingMembersBelow(tempRow, member.col, col - member.col, members)
+
+          #memberMaxCol = member.col + member.sizex
+          #if memberMaxCol > maxCol
+            #@getInfluencingMembersBelow(tempRow, maxCol + 1, memberMaxCol - maxCol, members)
+
+    members
+
   insertAt: (gridMember, row, col) ->
+    #maxRow = @grid.length
+    #members = @getMembersAt(row, col, gridMember.sizex, maxRow - row)
+    #for _, member of members
+      #if member.col < col
+        #@getMembersAt(member.row, member.col, col - member.col, maxRow - member.row, members)
+
     @set(gridMember, row, col)
     gridMember.moveTo(row, col)
 
@@ -100,6 +138,7 @@ class Grid
     @append(member)
 
 class GridMember
+  _count = 0
 
   constructor: (@grid, @el) ->
     $el = $(el)
@@ -110,6 +149,8 @@ class GridMember
     @sizex = $el.data('xxx-sizex') or 1
     @sizey = $el.data('xxx-sizey') or 1
 
+    @hash = _count++
+
     @resizeTo(@sizex, @sizey)
     @initEvents()
 
@@ -117,21 +158,22 @@ class GridMember
     $el = $(@el)
 
     $el.on 'xxx-draggable-snap', (e, left, top) =>
-      @row = Math.round @grid.topToRowUnit(top)
-      @col = Math.round @grid.leftToColUnit(left)
+      row = Math.round @grid.topToRowUnit(top)
+      col = Math.round @grid.leftToColUnit(left)
 
-      #@grid.insertAt(@, row, col)
+      @grid.insertAt(@, row, col)
 
-    #$el.on 'xxx-resizable-snap', (e, width, height) =>
+    $el.on 'xxx-resizable-snap', (e, width, height) =>
+      @sizex = Math.round @grid.widthToSize(width)
+      @sizey = Math.round @grid.heightToSize(height)
 
   getBelowNeighbors: ->
     neighbors = []
 
     neighborRow = @row + @sizey
-    if not @grid.isEmpty(neighborRow, @col)
-      for x in [0...@sizex]
-        neighbor = @grid.grid[neighborRow][@col + x]
-        neighbors.push neighbor if neighbor
+    for x in [0...@sizex]
+      neighbor = @grid.get(neighbor, @col + x)
+      neighbors.push neighbor if neighbor
 
     neighbors
 
