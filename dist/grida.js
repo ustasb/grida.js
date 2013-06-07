@@ -1,5 +1,5 @@
 (function() {
-  var $DOCUMENT, $WINDOW, Draggable, Grid, GridMember, MousePos, Resizable, SnapDraggable, SnapResizable,
+  var $DOCUMENT, $WINDOW, Draggable, Grid, GridMember, InsertionType, MousePos, Resizable, SnapDraggable, SnapResizable,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -225,6 +225,11 @@
 
   })(Resizable);
 
+  InsertionType = {
+    TRADE: 1,
+    SHIFT_DOWN: 2
+  };
+
   Grid = (function() {
     function Grid(containerEl, gridx, gridy, marginx, marginy) {
       this.containerEl = containerEl;
@@ -392,16 +397,26 @@
         return false;
       }
       if (row === 0) {
-        return true;
+        return InsertionType.SHIFT_DOWN;
       } else {
         members = this.getMembersAt(row, col, sizex, sizey);
+        for (_ in members) {
+          member = members[_];
+          if (member.sizey === (row - newMember.row)) {
+            return InsertionType.TRADE;
+          }
+        }
         aboveNeighbors = this.getMembersAt(row - 1, col, sizex, 1);
         delete aboveNeighbors[newMember.id];
         for (_ in members) {
           member = members[_];
           delete aboveNeighbors[member.id];
         }
-        return !$.isEmptyObject(aboveNeighbors);
+        if ($.isEmptyObject(aboveNeighbors)) {
+          return false;
+        } else {
+          return InsertionType.SHIFT_DOWN;
+        }
       }
     };
 
@@ -491,25 +506,73 @@
         _this = this;
       $el = $(this.el);
       return $el.on('xxx-draggable-snap', function(e, row, col) {
+        var member, oldChildren, _, _results;
         console.log(row, col);
         console.log(_this.grid.isInsertionPossibleAt(_this, row, col));
-        if (_this.grid.isInsertionPossibleAt(_this, row, col)) {
-          return _this.grid.insertAt(_this, row, col);
+        oldChildren = _this.getInfluencingMembersBelow({}, false);
+        switch (_this.grid.isInsertionPossibleAt(_this, row, col)) {
+          case InsertionType.TRADE:
+            _this.grid.remove(_this);
+            for (_ in oldChildren) {
+              member = oldChildren[_];
+              member.collapseAboveWhiteSpace(false);
+            }
+            _this.grid.set(_this, row, col);
+            return _this.moveTo(row, col);
+          case InsertionType.SHIFT_DOWN:
+            _this.grid.insertAt(_this, row, col);
+            _results = [];
+            for (_ in oldChildren) {
+              member = oldChildren[_];
+              _results.push(member.collapseAboveWhiteSpace());
+            }
+            return _results;
         }
       });
     };
 
-    GridMember.prototype.getInfluencingMembersBelow = function(members) {
+    GridMember.prototype.collapseAboveWhiteSpace = function(recursive) {
+      var aboveRow, children, dy, grid, member, _, _results;
+      if (recursive == null) {
+        recursive = true;
+      }
+      grid = this.grid;
+      children = recursive ? this.getInfluencingMembersBelow({}, false) : {};
+      dy = 0;
+      aboveRow = this.row - 1;
+      while (aboveRow >= 0 && $.isEmptyObject(grid.getMembersAt(aboveRow, this.col, this.sizex, 1))) {
+        dy += 1;
+        aboveRow = this.row - 1 - dy;
+      }
+      if (dy > 0) {
+        grid.remove(this);
+        grid.set(this, this.row - dy, this.col);
+        this.moveTo(this.row - dy, this.col);
+      }
+      _results = [];
+      for (_ in children) {
+        member = children[_];
+        _results.push(member.collapseAboveWhiteSpace(true));
+      }
+      return _results;
+    };
+
+    GridMember.prototype.getInfluencingMembersBelow = function(members, recursive) {
       var neighbor, neighborRow, x, _i, _ref;
       if (members == null) {
         members = {};
+      }
+      if (recursive == null) {
+        recursive = true;
       }
       neighborRow = this.row + this.sizey;
       for (x = _i = 0, _ref = this.sizex; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
         neighbor = this.grid.get(neighborRow, this.col + x);
         if (neighbor) {
           members[neighbor.id] = neighbor;
-          neighbor.getInfluencingMembersBelow(members);
+          if (recursive) {
+            neighbor.getInfluencingMembersBelow(members);
+          }
         }
       }
       return members;

@@ -1,3 +1,7 @@
+InsertionType =
+  TRADE: 1
+  SHIFT_DOWN: 2
+
 class Grid
 
   constructor: (@containerEl, @gridx, @gridy, @marginx = 0, @marginy = 0) ->
@@ -99,22 +103,30 @@ class Grid
       return false
 
     if row is 0
-      return true
+      return InsertionType.SHIFT_DOWN
     else
       members = @getMembersAt(row, col, sizex, sizey)
+
+      # Can a trade occur?
+      #console.log(members)
+      for _, member of members
+        if member.sizey is (row - newMember.row)
+          return InsertionType.TRADE
+
       aboveNeighbors = @getMembersAt(row - 1, col, sizex, 1)
 
       delete aboveNeighbors[newMember.id]
       delete aboveNeighbors[member.id] for _, member of members
 
-      return not $.isEmptyObject(aboveNeighbors)
+      if $.isEmptyObject(aboveNeighbors)
+        return false
+      else
+        return InsertionType.SHIFT_DOWN
 
   insertAt: (gridMember, row, col) ->
     @remove(gridMember)
 
     membersAtNewLocation = @getMembersAt(row, col, gridMember.sizex, gridMember.sizey)
-    #delete membersAtNewLocation[gridMember.id]
-
     belowMembers = {}
 
     for _, member of membersAtNewLocation
@@ -177,24 +189,56 @@ class GridMember
       console.log row, col
       console.log @grid.isInsertionPossibleAt(@, row, col)
 
-      if @grid.isInsertionPossibleAt(@, row, col)
-        @grid.insertAt(@, row, col)
+      oldChildren = @getInfluencingMembersBelow({}, false)
 
+      switch @grid.isInsertionPossibleAt(@, row, col)
 
-      #@grid.insertAt(@, row, col)
+        when InsertionType.TRADE
+          @grid.remove(@)
+
+          for _, member of oldChildren
+            member.collapseAboveWhiteSpace(false)
+
+          @grid.set(@, row, col)
+          @moveTo(row, col)
+
+        when InsertionType.SHIFT_DOWN
+          @grid.insertAt(@, row, col)
+
+          for _, member of oldChildren
+            member.collapseAboveWhiteSpace()
 
     #$el.on 'xxx-resizable-snap', (e, width, height) =>
       #@sizex = Math.round @grid.widthToSize(width)
       #@sizey = Math.round @grid.heightToSize(height)
 
-  getInfluencingMembersBelow: (members = {}) ->
+  collapseAboveWhiteSpace: (recursive = true) ->
+    grid = @grid
+    children = if recursive then @getInfluencingMembersBelow({}, false) else {}
+
+    dy = 0
+    aboveRow = @row - 1
+
+    while aboveRow >= 0 and $.isEmptyObject grid.getMembersAt(aboveRow, @col, @sizex, 1)
+      dy += 1
+      aboveRow = @row - 1 - dy
+
+    if dy > 0
+      grid.remove(@)
+      grid.set(@, @row - dy, @col)
+      @moveTo(@row - dy, @col)
+
+    for _, member of children
+      member.collapseAboveWhiteSpace(true)
+
+  getInfluencingMembersBelow: (members = {}, recursive = true) ->
     neighborRow = @row + @sizey
 
     for x in [0...@sizex]
       neighbor = @grid.get(neighborRow, @col + x)
       if neighbor
         members[neighbor.id] = neighbor
-        neighbor.getInfluencingMembersBelow(members)
+        neighbor.getInfluencingMembersBelow(members) if recursive
 
     members
 
