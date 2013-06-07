@@ -1,11 +1,8 @@
 class Draggable
 
-  @create: (el, opts = {}) ->
-    grid = opts.grid
-    margin = opts.margin
-
+  @create: (el, grid)->
     if grid
-      new SnapDraggable(el, grid.x, grid.y, margin.x, margin.y)
+      new SnapDraggable(el, grid)
     else
       new Draggable(el)
 
@@ -44,51 +41,33 @@ class Draggable
       el.style.top = event.pageY - startTop + 'px'
 
 class SnapDraggable extends Draggable
-  constructor: (el, @gridx, @gridy, @marginx, @marginy) ->
+  constructor: (el, @grid) ->
     super(el)
 
   getMousemoveCB: (mousex, mousey) ->
     el = @el
     $el = $(el)
-    marginx = @marginx
-    marginy = @marginy
-    gridx = @gridx + marginx
-    gridy = @gridy + marginy
-    gridxHalf = gridx / 2
-    gridyHalf = gridy / 2
+    grid = @grid
+    round = Math.round
 
     position = $el.position()
-    offsetLeft = position.left % gridx
-    offsetTop = position.top % gridy
 
     startLeft = mousex - position.left
     startTop = mousey - position.top
 
-    oldPosCombined = 0
+    oldRowCol = round(grid.topToRowUnit(position.top)) + 'x' +
+                round(grid.leftToColUnit(position.left))
 
     (event) ->
       left = event.pageX - startLeft
       top = event.pageY - startTop
 
-      snapx = left % gridx
-      snapy = top % gridy
+      row = round grid.topToRowUnit(top)
+      col = round grid.leftToColUnit(left)
 
-      if snapx >= gridxHalf
-        left += gridx - snapx
-      else
-        left -= snapx
-
-      if snapy >= gridyHalf
-        top += gridy - snapy
-      else
-        top -= snapy
-
-      left += offsetLeft
-      top += offsetTop
-
-      if oldPosCombined isnt left + top
-        $el.trigger('xxx-draggable-snap', [left, top])
-        oldPosCombined = left + top
+      if (row + 'x' + col) isnt oldRowCol
+        $el.trigger('xxx-draggable-snap', [row, col])
+        oldRowCol = row + 'x' + col
 
       el.style.left = left + 'px'
-      el.style.top =  top + 'px'
+      el.style.top = top + 'px'

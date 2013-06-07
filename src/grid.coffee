@@ -2,7 +2,7 @@ class Grid
 
   constructor: (@containerEl, @gridx, @gridy, @marginx = 0, @marginy = 0) ->
     @maxCol = 0
-    @maxRow = 0
+    #@maxRow = 0
 
     @grid = []
     @members = []
@@ -48,24 +48,29 @@ class Grid
     gridWidth = @marginx + maxElements * (@gridx + @marginx)
     @offsetLeft = (containerWidth - gridWidth) / 2
 
-  set: (gridMember, row, col) ->
-    for y in [0...gridMember.sizey]
-      nextRow = row + y
-      @grid[nextRow] = [] if not @grid[nextRow]
-
-      for x in [0...gridMember.sizex]
-
-        if gridMember.row isnt null
-          # Empty currently occupied cells.
-          delete @grid[gridMember.row + y]?[gridMember.col + x]
-
-        @grid[nextRow][col + x] = gridMember
-
   get: (row, col) ->
     if not @grid[row]
       null
     else
       @grid[row][col]
+
+  set: (gridMember, row, col) ->
+    for y in [0...gridMember.sizey]
+      tempRow = row + y
+      @grid[tempRow] = [] if not @grid[tempRow]
+
+      for x in [0...gridMember.sizex]
+        @grid[tempRow][col + x] = gridMember
+
+  remove: (gridMember) ->
+    return if gridMember.row is null
+
+    for y in [0...gridMember.sizey]
+      tempRow = gridMember.row + y
+      for x in [0...gridMember.sizex]
+        delete @grid[tempRow][gridMember.col + x]
+
+    #gridMember.row = gridMember.col = null
 
   isSpaceFree: (row, col, sizex, sizey) ->
     for y in [0...sizey]
@@ -78,40 +83,52 @@ class Grid
       tempRow = row + y
 
       for x in [0...sizex]
-        member = @grid[tempRow][col + x]
-        if member
-          members[member.hash] = member  # Ensure a unique list
-
-    members
-
-  getInfluencingMembersBelow: (row, col, sizex = 1, members = {}) ->
-    sizey = @grid.length - row
-    maxCol = col + (sizex - 1)
-
-    for y in [0...sizey] by 1
-      tempRow = row + y
-
-      for x in [0...sizex] by 1
         member = @get(tempRow, col + x)
-
-        if member and members[member.hash] is undefined
-          members[member.hash] = member  # Ensure a unique list
-
-          #if member.col < col
-            #@getInfluencingMembersBelow(tempRow, member.col, col - member.col, members)
-
-          #memberMaxCol = member.col + member.sizex
-          #if memberMaxCol > maxCol
-            #@getInfluencingMembersBelow(tempRow, maxCol + 1, memberMaxCol - maxCol, members)
+        members[member.id] = member if member
 
     members
+
+  isInsertionPossibleAt: (newMember, row, col) ->
+    sizex = newMember.sizex
+    sizey = newMember.sizey
+
+    newMaxCol = col + (sizex - 1)
+
+    # Outside the boundaries?
+    if col < 0 or row < 0 or newMaxCol > @maxCol
+      return false
+
+    if row is 0
+      return true
+    else
+      members = @getMembersAt(row, col, sizex, sizey)
+      aboveNeighbors = @getMembersAt(row - 1, col, sizex, 1)
+
+      delete aboveNeighbors[newMember.id]
+      delete aboveNeighbors[member.id] for _, member of members
+
+      return not $.isEmptyObject(aboveNeighbors)
 
   insertAt: (gridMember, row, col) ->
-    #maxRow = @grid.length
-    #members = @getMembersAt(row, col, gridMember.sizex, maxRow - row)
-    #for _, member of members
-      #if member.col < col
-        #@getMembersAt(member.row, member.col, col - member.col, maxRow - member.row, members)
+    @remove(gridMember)
+
+    membersAtNewLocation = @getMembersAt(row, col, gridMember.sizex, gridMember.sizey)
+    #delete membersAtNewLocation[gridMember.id]
+
+    belowMembers = {}
+
+    for _, member of membersAtNewLocation
+      continue if belowMembers[member.id]
+
+      belowMembers = member.getInfluencingMembersBelow()
+      belowMembers[member.id] = member
+
+      dy = (row - member.row) + gridMember.sizey
+
+      @remove(child) for _, child of belowMembers
+      for _, child of belowMembers
+        @set(child, child.row + dy, child.col)
+        child.moveTo(child.row + dy, child.col)
 
     @set(gridMember, row, col)
     gridMember.moveTo(row, col)
@@ -131,17 +148,18 @@ class Grid
     else
       @append(gridMember, row, col + 1)
 
-
   addElement: (el) ->
     member = new GridMember(@, el)
     @members.push(member)
     @append(member)
 
 class GridMember
-  _count = 0
+  _count = 1
 
   constructor: (@grid, @el) ->
     $el = $(el)
+
+    @id = _count++
 
     @row = null
     @col = null
@@ -149,33 +167,36 @@ class GridMember
     @sizex = $el.data('xxx-sizex') or 1
     @sizey = $el.data('xxx-sizey') or 1
 
-    @hash = _count++
-
     @resizeTo(@sizex, @sizey)
     @initEvents()
 
   initEvents: ->
     $el = $(@el)
 
-    $el.on 'xxx-draggable-snap', (e, left, top) =>
-      row = Math.round @grid.topToRowUnit(top)
-      col = Math.round @grid.leftToColUnit(left)
+    $el.on 'xxx-draggable-snap', (e, row, col) =>
+      console.log row, col
+      console.log @grid.isInsertionPossibleAt(@, row, col)
 
-      @grid.insertAt(@, row, col)
+      if @grid.isInsertionPossibleAt(@, row, col)
+        @grid.insertAt(@, row, col)
 
-    $el.on 'xxx-resizable-snap', (e, width, height) =>
-      @sizex = Math.round @grid.widthToSize(width)
-      @sizey = Math.round @grid.heightToSize(height)
 
-  getBelowNeighbors: ->
-    neighbors = []
+      #@grid.insertAt(@, row, col)
 
+    #$el.on 'xxx-resizable-snap', (e, width, height) =>
+      #@sizex = Math.round @grid.widthToSize(width)
+      #@sizey = Math.round @grid.heightToSize(height)
+
+  getInfluencingMembersBelow: (members = {}) ->
     neighborRow = @row + @sizey
-    for x in [0...@sizex]
-      neighbor = @grid.get(neighbor, @col + x)
-      neighbors.push neighbor if neighbor
 
-    neighbors
+    for x in [0...@sizex]
+      neighbor = @grid.get(neighborRow, @col + x)
+      if neighbor
+        members[neighbor.id] = neighbor
+        neighbor.getInfluencingMembersBelow(members)
+
+    members
 
   moveTo: (@row, @col) ->
     @el.style.top = @grid.rowUnitToTop(row) + 'px'

@@ -28,16 +28,9 @@
   })();
 
   Draggable = (function() {
-    Draggable.create = function(el, opts) {
-      var grid, margin;
-
-      if (opts == null) {
-        opts = {};
-      }
-      grid = opts.grid;
-      margin = opts.margin;
+    Draggable.create = function(el, grid) {
       if (grid) {
-        return new SnapDraggable(el, grid.x, grid.y, margin.x, margin.y);
+        return new SnapDraggable(el, grid);
       } else {
         return new Draggable(el);
       }
@@ -52,7 +45,6 @@
 
     Draggable.prototype.setCssAbsolute = function() {
       var el, position;
-
       el = this.el;
       position = $(el).position();
       el.style.position = 'absolute';
@@ -62,7 +54,6 @@
 
     Draggable.prototype.initEvents = function() {
       var _this = this;
-
       $DOCUMENT.mouseup(function() {
         return _this.mousePos.stopRecording();
       });
@@ -74,7 +65,6 @@
 
     Draggable.prototype.getMousemoveCB = function(mousex, mousey) {
       var el, position, startLeft, startTop;
-
       el = this.el;
       position = $(el).position();
       startLeft = mousex - position.left;
@@ -92,53 +82,30 @@
   SnapDraggable = (function(_super) {
     __extends(SnapDraggable, _super);
 
-    function SnapDraggable(el, gridx, gridy, marginx, marginy) {
-      this.gridx = gridx;
-      this.gridy = gridy;
-      this.marginx = marginx;
-      this.marginy = marginy;
+    function SnapDraggable(el, grid) {
+      this.grid = grid;
       SnapDraggable.__super__.constructor.call(this, el);
     }
 
     SnapDraggable.prototype.getMousemoveCB = function(mousex, mousey) {
-      var $el, el, gridx, gridxHalf, gridy, gridyHalf, marginx, marginy, offsetLeft, offsetTop, oldPosCombined, position, startLeft, startTop;
-
+      var $el, el, grid, oldRowCol, position, round, startLeft, startTop;
       el = this.el;
       $el = $(el);
-      marginx = this.marginx;
-      marginy = this.marginy;
-      gridx = this.gridx + marginx;
-      gridy = this.gridy + marginy;
-      gridxHalf = gridx / 2;
-      gridyHalf = gridy / 2;
+      grid = this.grid;
+      round = Math.round;
       position = $el.position();
-      offsetLeft = position.left % gridx;
-      offsetTop = position.top % gridy;
       startLeft = mousex - position.left;
       startTop = mousey - position.top;
-      oldPosCombined = 0;
+      oldRowCol = round(grid.topToRowUnit(position.top)) + 'x' + round(grid.leftToColUnit(position.left));
       return function(event) {
-        var left, snapx, snapy, top;
-
+        var col, left, row, top;
         left = event.pageX - startLeft;
         top = event.pageY - startTop;
-        snapx = left % gridx;
-        snapy = top % gridy;
-        if (snapx >= gridxHalf) {
-          left += gridx - snapx;
-        } else {
-          left -= snapx;
-        }
-        if (snapy >= gridyHalf) {
-          top += gridy - snapy;
-        } else {
-          top -= snapy;
-        }
-        left += offsetLeft;
-        top += offsetTop;
-        if (oldPosCombined !== left + top) {
-          $el.trigger('xxx-draggable-snap', [left, top]);
-          oldPosCombined = left + top;
+        row = round(grid.topToRowUnit(top));
+        col = round(grid.leftToColUnit(left));
+        if ((row + 'x' + col) !== oldRowCol) {
+          $el.trigger('xxx-draggable-snap', [row, col]);
+          oldRowCol = row + 'x' + col;
         }
         el.style.left = left + 'px';
         return el.style.top = top + 'px';
@@ -152,7 +119,6 @@
   Resizable = (function() {
     Resizable.create = function(el, opts) {
       var grid, margin;
-
       if (opts == null) {
         opts = {};
       }
@@ -178,7 +144,6 @@
 
     Resizable.prototype.initEvents = function() {
       var _this = this;
-
       $DOCUMENT.mouseup(function() {
         return _this.mousePos.stopRecording();
       });
@@ -191,7 +156,6 @@
 
     Resizable.prototype.getMousemoveCB = function(mousex, mousey) {
       var $el, el, startLeft, startTop;
-
       el = this.el;
       $el = $(el);
       startLeft = mousex - $el.width();
@@ -219,7 +183,6 @@
 
     SnapResizable.prototype.getMousemoveCB = function(mousex, mousey) {
       var $el, el, gridx, gridxHalf, gridy, gridyHalf, marginx, marginy, oldSizeCombined, startLeft, startTop;
-
       el = this.el;
       $el = $(el);
       marginx = this.marginx;
@@ -233,7 +196,6 @@
       oldSizeCombined = 0;
       return function(event) {
         var height, snapx, snapy, width;
-
         width = event.pageX - startLeft;
         height = event.pageY - startTop;
         snapx = width % gridx;
@@ -271,7 +233,6 @@
       this.marginx = marginx != null ? marginx : 0;
       this.marginy = marginy != null ? marginy : 0;
       this.maxCol = 0;
-      this.maxRow = 0;
       this.grid = [];
       this.members = [];
       this.updateMaxCol();
@@ -281,10 +242,8 @@
 
     Grid.prototype.initEvents = function() {
       var _this = this;
-
       return $WINDOW.resize(function() {
         var member, _i, _len, _ref, _results;
-
         _this.updateMaxCol();
         _this.updateOffsetLeft();
         _this.grid = [];
@@ -332,7 +291,6 @@
 
     Grid.prototype.updateMaxCol = function() {
       var containerWidth;
-
       containerWidth = $(this.containerEl).width();
       this.maxCol = Math.floor(this.widthToSize(containerWidth)) - 1;
       if (this.maxCol < 0) {
@@ -342,38 +300,10 @@
 
     Grid.prototype.updateOffsetLeft = function() {
       var containerWidth, gridWidth, maxElements;
-
       containerWidth = $(this.containerEl).width();
       maxElements = this.maxCol + 1;
       gridWidth = this.marginx + maxElements * (this.gridx + this.marginx);
       return this.offsetLeft = (containerWidth - gridWidth) / 2;
-    };
-
-    Grid.prototype.set = function(gridMember, row, col) {
-      var nextRow, x, y, _i, _ref, _results;
-
-      _results = [];
-      for (y = _i = 0, _ref = gridMember.sizey; 0 <= _ref ? _i < _ref : _i > _ref; y = 0 <= _ref ? ++_i : --_i) {
-        nextRow = row + y;
-        if (!this.grid[nextRow]) {
-          this.grid[nextRow] = [];
-        }
-        _results.push((function() {
-          var _j, _ref1, _ref2, _results1;
-
-          _results1 = [];
-          for (x = _j = 0, _ref1 = gridMember.sizex; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; x = 0 <= _ref1 ? ++_j : --_j) {
-            if (gridMember.row !== null) {
-              if ((_ref2 = this.grid[gridMember.row + y]) != null) {
-                delete _ref2[gridMember.col + x];
-              }
-            }
-            _results1.push(this.grid[nextRow][col + x] = gridMember);
-          }
-          return _results1;
-        }).call(this));
-      }
-      return _results;
     };
 
     Grid.prototype.get = function(row, col) {
@@ -384,9 +314,48 @@
       }
     };
 
+    Grid.prototype.set = function(gridMember, row, col) {
+      var tempRow, x, y, _i, _ref, _results;
+      _results = [];
+      for (y = _i = 0, _ref = gridMember.sizey; 0 <= _ref ? _i < _ref : _i > _ref; y = 0 <= _ref ? ++_i : --_i) {
+        tempRow = row + y;
+        if (!this.grid[tempRow]) {
+          this.grid[tempRow] = [];
+        }
+        _results.push((function() {
+          var _j, _ref1, _results1;
+          _results1 = [];
+          for (x = _j = 0, _ref1 = gridMember.sizex; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; x = 0 <= _ref1 ? ++_j : --_j) {
+            _results1.push(this.grid[tempRow][col + x] = gridMember);
+          }
+          return _results1;
+        }).call(this));
+      }
+      return _results;
+    };
+
+    Grid.prototype.remove = function(gridMember) {
+      var tempRow, x, y, _i, _ref, _results;
+      if (gridMember.row === null) {
+        return;
+      }
+      _results = [];
+      for (y = _i = 0, _ref = gridMember.sizey; 0 <= _ref ? _i < _ref : _i > _ref; y = 0 <= _ref ? ++_i : --_i) {
+        tempRow = gridMember.row + y;
+        _results.push((function() {
+          var _j, _ref1, _results1;
+          _results1 = [];
+          for (x = _j = 0, _ref1 = gridMember.sizex; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; x = 0 <= _ref1 ? ++_j : --_j) {
+            _results1.push(delete this.grid[tempRow][gridMember.col + x]);
+          }
+          return _results1;
+        }).call(this));
+      }
+      return _results;
+    };
+
     Grid.prototype.isSpaceFree = function(row, col, sizex, sizey) {
       var x, y, _i, _j;
-
       for (y = _i = 0; 0 <= sizey ? _i < sizey : _i > sizey; y = 0 <= sizey ? ++_i : --_i) {
         for (x = _j = 0; 0 <= sizex ? _j < sizex : _j > sizex; x = 0 <= sizex ? ++_j : --_j) {
           if (this.get(row + y, col + x)) {
@@ -399,53 +368,72 @@
 
     Grid.prototype.getMembersAt = function(row, col, sizex, sizey, members) {
       var member, tempRow, x, y, _i, _j;
-
       if (members == null) {
         members = {};
       }
       for (y = _i = 0; 0 <= sizey ? _i < sizey : _i > sizey; y = 0 <= sizey ? ++_i : --_i) {
         tempRow = row + y;
         for (x = _j = 0; 0 <= sizex ? _j < sizex : _j > sizex; x = 0 <= sizex ? ++_j : --_j) {
-          member = this.grid[tempRow][col + x];
+          member = this.get(tempRow, col + x);
           if (member) {
-            members[member.hash] = member;
+            members[member.id] = member;
           }
         }
       }
       return members;
     };
 
-    Grid.prototype.getInfluencingMembersBelow = function(row, col, sizex, members) {
-      var maxCol, member, sizey, tempRow, x, y, _i, _j;
-
-      if (sizex == null) {
-        sizex = 1;
+    Grid.prototype.isInsertionPossibleAt = function(newMember, row, col) {
+      var aboveNeighbors, member, members, newMaxCol, sizex, sizey, _;
+      sizex = newMember.sizex;
+      sizey = newMember.sizey;
+      newMaxCol = col + (sizex - 1);
+      if (col < 0 || row < 0 || newMaxCol > this.maxCol) {
+        return false;
       }
-      if (members == null) {
-        members = {};
-      }
-      sizey = this.grid.length - row;
-      maxCol = col + (sizex - 1);
-      for (y = _i = 0; _i < sizey; y = _i += 1) {
-        tempRow = row + y;
-        for (x = _j = 0; _j < sizex; x = _j += 1) {
-          member = this.get(tempRow, col + x);
-          if (member && members[member.hash] === void 0) {
-            members[member.hash] = member;
-          }
+      if (row === 0) {
+        return true;
+      } else {
+        members = this.getMembersAt(row, col, sizex, sizey);
+        aboveNeighbors = this.getMembersAt(row - 1, col, sizex, 1);
+        delete aboveNeighbors[newMember.id];
+        for (_ in members) {
+          member = members[_];
+          delete aboveNeighbors[member.id];
         }
+        return !$.isEmptyObject(aboveNeighbors);
       }
-      return members;
     };
 
     Grid.prototype.insertAt = function(gridMember, row, col) {
+      var belowMembers, child, dy, member, membersAtNewLocation, _;
+      this.remove(gridMember);
+      membersAtNewLocation = this.getMembersAt(row, col, gridMember.sizex, gridMember.sizey);
+      belowMembers = {};
+      for (_ in membersAtNewLocation) {
+        member = membersAtNewLocation[_];
+        if (belowMembers[member.id]) {
+          continue;
+        }
+        belowMembers = member.getInfluencingMembersBelow();
+        belowMembers[member.id] = member;
+        dy = (row - member.row) + gridMember.sizey;
+        for (_ in belowMembers) {
+          child = belowMembers[_];
+          this.remove(child);
+        }
+        for (_ in belowMembers) {
+          child = belowMembers[_];
+          this.set(child, child.row + dy, child.col);
+          child.moveTo(child.row + dy, child.col);
+        }
+      }
       this.set(gridMember, row, col);
       return gridMember.moveTo(row, col);
     };
 
     Grid.prototype.append = function(gridMember, row, col) {
       var memberMaxCol, sizex, sizey;
-
       if (row == null) {
         row = 0;
       }
@@ -470,7 +458,6 @@
 
     Grid.prototype.addElement = function(el) {
       var member;
-
       member = new GridMember(this, el);
       this.members.push(member);
       return this.append(member);
@@ -483,19 +470,18 @@
   GridMember = (function() {
     var _count;
 
-    _count = 0;
+    _count = 1;
 
     function GridMember(grid, el) {
       var $el;
-
       this.grid = grid;
       this.el = el;
       $el = $(el);
+      this.id = _count++;
       this.row = null;
       this.col = null;
       this.sizex = $el.data('xxx-sizex') || 1;
       this.sizey = $el.data('xxx-sizey') || 1;
-      this.hash = _count++;
       this.resizeTo(this.sizex, this.sizey);
       this.initEvents();
     }
@@ -503,33 +489,30 @@
     GridMember.prototype.initEvents = function() {
       var $el,
         _this = this;
-
       $el = $(this.el);
-      $el.on('xxx-draggable-snap', function(e, left, top) {
-        var col, row;
-
-        row = Math.round(_this.grid.topToRowUnit(top));
-        col = Math.round(_this.grid.leftToColUnit(left));
-        return _this.grid.insertAt(_this, row, col);
-      });
-      return $el.on('xxx-resizable-snap', function(e, width, height) {
-        _this.sizex = Math.round(_this.grid.widthToSize(width));
-        return _this.sizey = Math.round(_this.grid.heightToSize(height));
+      return $el.on('xxx-draggable-snap', function(e, row, col) {
+        console.log(row, col);
+        console.log(_this.grid.isInsertionPossibleAt(_this, row, col));
+        if (_this.grid.isInsertionPossibleAt(_this, row, col)) {
+          return _this.grid.insertAt(_this, row, col);
+        }
       });
     };
 
-    GridMember.prototype.getBelowNeighbors = function() {
-      var neighbor, neighborRow, neighbors, x, _i, _ref;
-
-      neighbors = [];
+    GridMember.prototype.getInfluencingMembersBelow = function(members) {
+      var neighbor, neighborRow, x, _i, _ref;
+      if (members == null) {
+        members = {};
+      }
       neighborRow = this.row + this.sizey;
       for (x = _i = 0, _ref = this.sizex; 0 <= _ref ? _i < _ref : _i > _ref; x = 0 <= _ref ? ++_i : --_i) {
-        neighbor = this.grid.get(neighbor, this.col + x);
+        neighbor = this.grid.get(neighborRow, this.col + x);
         if (neighbor) {
-          neighbors.push(neighbor);
+          members[neighbor.id] = neighbor;
+          neighbor.getInfluencingMembersBelow(members);
         }
       }
-      return neighbors;
+      return members;
     };
 
     GridMember.prototype.moveTo = function(row, col) {
@@ -551,30 +534,18 @@
   })();
 
   $.fn.grida = function(opts) {
-    var args, el, grid, gridElArgs, margin, _i, _j, _len, _len1, _ref, _ref1, _results;
-
-    grid = opts.grid;
-    margin = opts.margin;
-    gridElArgs = [];
-    _ref = this.children().get().reverse();
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      el = _ref[_i];
-      gridElArgs.push([
-        el, Draggable.create(el, {
-          grid: grid,
-          margin: margin
-        }), Resizable.create(el, {
-          grid: grid,
-          margin: margin
-        })
-      ]);
+    var children, el, grid, _i, _j, _len, _len1, _ref, _results;
+    grid = new Grid(this.get(), opts.grid.x, opts.grid.y, opts.margin.x, opts.margin.y);
+    children = this.children().get().reverse();
+    for (_i = 0, _len = children.length; _i < _len; _i++) {
+      el = children[_i];
+      Draggable.create(el, grid);
     }
-    grid = new Grid(this.get(), grid.x, grid.y, margin.x, margin.y);
-    _ref1 = gridElArgs.reverse();
+    _ref = children.reverse();
     _results = [];
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      args = _ref1[_j];
-      _results.push(grid.addElement.apply(grid, args));
+    for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+      el = _ref[_j];
+      _results.push(grid.addElement(el));
     }
     return _results;
   };

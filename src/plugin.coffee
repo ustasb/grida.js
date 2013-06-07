@@ -1,24 +1,16 @@
 $.fn.grida = (opts) ->
-  grid = opts.grid
-  margin = opts.margin
+
+  grid = new Grid(this.get(),
+                  opts.grid.x,
+                  opts.grid.y,
+                  opts.margin.x,
+                  opts.margin.y)
 
   # Draggables needs to be created in reverse order to prevent element
   # collapsing when absolute positioning is applied.
-  gridElArgs = []
-  for el in @children().get().reverse()
-    gridElArgs.push [
-      el,
-      Draggable.create(el,
-        grid: grid
-        margin: margin
-      ),
-      Resizable.create(el,
-        grid: grid
-        margin: margin
-      )
-    ]
+  children = @children().get().reverse()
+  for el in children
+    Draggable.create(el, grid)
 
-  grid = new Grid(this.get(), grid.x, grid.y, margin.x, margin.y)
-
-  for args in gridElArgs.reverse()
-    grid.addElement(args...)
+  for el in children.reverse()
+    grid.addElement(el)
