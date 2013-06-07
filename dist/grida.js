@@ -53,11 +53,15 @@
     };
 
     Draggable.prototype.initEvents = function() {
-      var _this = this;
-      $DOCUMENT.mouseup(function() {
+      var $el,
+        _this = this;
+      $el = $(this.el);
+      $el.mouseup(function(event) {
+        $el.trigger('xxx-draggable-mouseup', [event]);
         return _this.mousePos.stopRecording();
       });
       return $(this.el).mousedown(function(event) {
+        $el.trigger('xxx-draggable-mousedown', [event]);
         _this.mousePos.record(_this.getMousemoveCB(event.pageX, event.pageY));
         return false;
       });
@@ -351,7 +355,11 @@
           var _j, _ref1, _results1;
           _results1 = [];
           for (x = _j = 0, _ref1 = gridMember.sizex; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; x = 0 <= _ref1 ? ++_j : --_j) {
-            _results1.push(delete this.grid[tempRow][gridMember.col + x]);
+            if (this.get(tempRow, gridMember.col + x) === gridMember) {
+              _results1.push(delete this.grid[tempRow][gridMember.col + x]);
+            } else {
+              _results1.push(void 0);
+            }
           }
           return _results1;
         }).call(this));
@@ -493,6 +501,7 @@
       this.el = el;
       $el = $(el);
       this.id = _count++;
+      this.$ghost = null;
       this.row = null;
       this.col = null;
       this.sizex = $el.data('xxx-sizex') || 1;
@@ -505,21 +514,44 @@
       var $el,
         _this = this;
       $el = $(this.el);
+      $el.on('xxx-draggable-mousedown', function(e) {
+        console.log('down');
+        _this.$ghost = $el.clone().css({
+          zIndex: -1,
+          opacity: 0.2,
+          backgroundColor: 'blue'
+        });
+        return _this.$ghost.appendTo($el.parent());
+      });
+      $el.on('xxx-draggable-mouseup', function(e) {
+        console.log('up');
+        if (_this.$ghost) {
+          _this.$ghost.remove();
+          _this.$ghost = null;
+        }
+        _this.el.style.top = _this.grid.rowUnitToTop(_this.row) + 'px';
+        return _this.el.style.left = _this.grid.colUnitToLeft(_this.col) + 'px';
+      });
       return $el.on('xxx-draggable-snap', function(e, row, col) {
         var member, oldChildren, _, _results;
         console.log(row, col);
-        console.log(_this.grid.isInsertionPossibleAt(_this, row, col));
+        console.log(!!_this.grid.isInsertionPossibleAt(_this, row, col));
         oldChildren = _this.getInfluencingMembersBelow({}, false);
         switch (_this.grid.isInsertionPossibleAt(_this, row, col)) {
           case InsertionType.TRADE:
+            console.log('trade');
             _this.grid.remove(_this);
             for (_ in oldChildren) {
               member = oldChildren[_];
-              member.collapseAboveWhiteSpace(false);
+              if (member.sizey === (row - _this.row)) {
+                _this.grid.remove(member);
+                _this.grid.set(member, _this.row, member.col);
+                member.moveTo(_this.row, member.col);
+              }
             }
-            _this.grid.set(_this, row, col);
-            return _this.moveTo(row, col);
+            return _this.grid.insertAt(_this, row, col);
           case InsertionType.SHIFT_DOWN:
+            console.log('shift down');
             _this.grid.insertAt(_this, row, col);
             _results = [];
             for (_ in oldChildren) {
@@ -545,6 +577,7 @@
         aboveRow = this.row - 1 - dy;
       }
       if (dy > 0) {
+        console.log(this.id);
         grid.remove(this);
         grid.set(this, this.row - dy, this.col);
         this.moveTo(this.row - dy, this.col);
@@ -579,10 +612,19 @@
     };
 
     GridMember.prototype.moveTo = function(row, col) {
+      var left, top;
       this.row = row;
       this.col = col;
-      this.el.style.top = this.grid.rowUnitToTop(row) + 'px';
-      return this.el.style.left = this.grid.colUnitToLeft(col) + 'px';
+      top = this.grid.rowUnitToTop(row) + 'px';
+      left = this.grid.colUnitToLeft(col) + 'px';
+      this.el.style.top = top;
+      this.el.style.left = left;
+      if (this.$ghost) {
+        return this.$ghost.css({
+          top: top,
+          left: left
+        });
+      }
     };
 
     GridMember.prototype.resizeTo = function(sizex, sizey) {

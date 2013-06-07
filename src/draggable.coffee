@@ -22,9 +22,14 @@ class Draggable
     el.style.top = position.top + 'px'
 
   initEvents: ->
-    $DOCUMENT.mouseup => @mousePos.stopRecording()
+    $el = $(@el)
+
+    $el.mouseup (event) =>
+      $el.trigger('xxx-draggable-mouseup', [event])
+      @mousePos.stopRecording()
 
     $(@el).mousedown (event) =>
+      $el.trigger('xxx-draggable-mousedown', [event])
       @mousePos.record @getMousemoveCB(event.pageX, event.pageY)
 
       false  # Prevent selection highlighting

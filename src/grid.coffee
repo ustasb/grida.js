@@ -72,7 +72,8 @@ class Grid
     for y in [0...gridMember.sizey]
       tempRow = gridMember.row + y
       for x in [0...gridMember.sizex]
-        delete @grid[tempRow][gridMember.col + x]
+        if @get(tempRow, gridMember.col + x) is gridMember
+          delete @grid[tempRow][gridMember.col + x]
 
     #gridMember.row = gridMember.col = null
 
@@ -133,6 +134,7 @@ class Grid
       continue if belowMembers[member.id]
 
       belowMembers = member.getInfluencingMembersBelow()
+      #console.log member.id, member.row,  belowMembers
       belowMembers[member.id] = member
 
       dy = (row - member.row) + gridMember.sizey
@@ -173,6 +175,7 @@ class GridMember
 
     @id = _count++
 
+    @$ghost = null
     @row = null
     @col = null
 
@@ -185,24 +188,47 @@ class GridMember
   initEvents: ->
     $el = $(@el)
 
+    $el.on 'xxx-draggable-mousedown', (e) =>
+      console.log('down')
+      @$ghost = $el.clone().css
+        zIndex: -1
+        opacity: 0.2
+        backgroundColor: 'blue'
+
+      @$ghost.appendTo($el.parent())
+
+    $el.on 'xxx-draggable-mouseup', (e) =>
+      console.log('up')
+
+      if @$ghost
+        @$ghost.remove()
+        @$ghost = null
+
+      @el.style.top = @grid.rowUnitToTop(@row) + 'px'
+      @el.style.left = @grid.colUnitToLeft(@col) + 'px'
+
     $el.on 'xxx-draggable-snap', (e, row, col) =>
       console.log row, col
-      console.log @grid.isInsertionPossibleAt(@, row, col)
+      console.log !!@grid.isInsertionPossibleAt(@, row, col)
 
       oldChildren = @getInfluencingMembersBelow({}, false)
 
       switch @grid.isInsertionPossibleAt(@, row, col)
-
         when InsertionType.TRADE
+          console.log('trade')
           @grid.remove(@)
 
           for _, member of oldChildren
-            member.collapseAboveWhiteSpace(false)
+            if member.sizey is (row - @row)
+              @grid.remove(member)
+              @grid.set(member, @row, member.col)
+              member.moveTo(@row, member.col)
 
-          @grid.set(@, row, col)
-          @moveTo(row, col)
+          @grid.insertAt(@, row, col)
 
         when InsertionType.SHIFT_DOWN
+          console.log('shift down')
+
           @grid.insertAt(@, row, col)
 
           for _, member of oldChildren
@@ -224,6 +250,7 @@ class GridMember
       aboveRow = @row - 1 - dy
 
     if dy > 0
+      console.log @id
       grid.remove(@)
       grid.set(@, @row - dy, @col)
       @moveTo(@row - dy, @col)
@@ -243,8 +270,16 @@ class GridMember
     members
 
   moveTo: (@row, @col) ->
-    @el.style.top = @grid.rowUnitToTop(row) + 'px'
-    @el.style.left = @grid.colUnitToLeft(col) + 'px'
+    top = @grid.rowUnitToTop(row) + 'px'
+    left = @grid.colUnitToLeft(col) + 'px'
+
+    @el.style.top = top
+    @el.style.left = left
+
+    if @$ghost
+      @$ghost.css
+        top: top
+        left: left
 
   resizeTo: (@sizex, @sizey) ->
     @el.style.width = @grid.sizeToWidth(sizex) + 'px'
