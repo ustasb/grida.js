@@ -1,2 +1,5 @@
 .DS_STORE
+.grunt/*
 node_modules/*
+_SpecRunner.html
+spec/specs_combined.js
