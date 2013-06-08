@@ -1,41 +1,51 @@
 module.exports = (grunt) ->
 
+  buildOrder = [
+    'src/constants.coffee'
+    'src/mouse_position.coffee'
+    'src/draggable.coffee'
+    'src/resizable.coffee'
+    'src/grid.coffee'
+    'src/grid_member.coffee'
+    'src/plugin.coffee'
+  ]
+
   grunt.initConfig
+    pkg: grunt.file.readJSON('package.json')
+
+    dist:
+      dev: 'dist/<%= pkg.name %>.js'
+      min: 'dist/<%= pkg.name %>.min.js'
+      test: 'test/<%= pkg.name %>.bare.js'
+
     watch:
       src:
-        files: ['src/*.coffee']
-        tasks: ['coffee:src']
+        files: ['src/**/*.coffee']
+        tasks: ['coffee:join', 'coffee:bare']
       spec:
-        files: ['spec/*.coffee']
-        tasks: ['coffee:spec', 'jasmine']
+        files: ['test/spec/**/*_spec.coffee']
+        tasks: ['coffee:spec']
 
     coffee:
-      src:
+      join:
         options:
           join: true
+        files:
+          '<%= dist.dev %>': buildOrder
+      bare:
+        options:
           bare: true
         files:
-          'dist/grida.js': ['src/constants.coffee'
-                            'src/mouse_position.coffee'
-                            'src/draggable.coffee'
-                            'src/resizable.coffee'
-                            'src/grid.coffee'
-                            'src/plugin.coffee']
+          '<%= dist.test %>': buildOrder
       spec:
         files:
-          'spec/specs_combined.js': ['spec/*.coffee']
+          'test/specs_combined.js': 'test/spec/**/*_spec.coffee'
 
-    jasmine:
-      src: 'dist/grida.js'
-      options:
-        version: '1.3.1'
-        keepRunner: true
-        specs: 'spec/specs_combined.js'
-        vendor: 'vendor/jquery*.js'
+    uglify:
+      min:
+        files:
+          '<%= dist.min %>': '<%= dist.dev %>'
 
-
-  grunt.loadNpmTasks('grunt-contrib-coffee')
-  grunt.loadNpmTasks('grunt-contrib-jasmine')
   grunt.loadNpmTasks('grunt-contrib-watch')
-
-  grunt.registerTask('default', ['watch'])
+  grunt.loadNpmTasks('grunt-contrib-coffee')
+  grunt.loadNpmTasks('grunt-contrib-uglify')
