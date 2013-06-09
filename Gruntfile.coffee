@@ -6,7 +6,8 @@ module.exports = (grunt) ->
     'src/draggable.coffee'
     'src/resizable.coffee'
     'src/grid.coffee'
-    'src/grid_member.coffee'
+    'src/tile_grid.coffee'
+    'src/tile.coffee'
     'src/plugin.coffee'
   ]
 
