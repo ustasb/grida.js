@@ -3,7 +3,95 @@
     var grid;
     grid = null;
     beforeEach(function() {
-      return grid = new Grid(10, 10, 5, 5);
+      return grid = new Grid(10, 20, 5, 15);
+    });
+    describe('#colToLeft', function() {
+      return it('converts a column unit to a CSS left position', function() {
+        expect(grid.colToLeft(-3)).toEqual(-40);
+        expect(grid.colToLeft(-2)).toEqual(-25);
+        expect(grid.colToLeft(-1)).toEqual(-10);
+        expect(grid.colToLeft(0)).toEqual(5);
+        expect(grid.colToLeft(1)).toEqual(20);
+        expect(grid.colToLeft(2)).toEqual(35);
+        return expect(grid.colToLeft(3)).toEqual(50);
+      });
+    });
+    describe('#leftToCol', function() {
+      return it('converts a CSS left position to a column unit', function() {
+        expect(grid.leftToCol(-40)).toEqual(-3);
+        expect(grid.leftToCol(-25)).toEqual(-2);
+        expect(grid.leftToCol(-10)).toEqual(-1);
+        expect(grid.leftToCol(5)).toEqual(0);
+        expect(grid.leftToCol(20)).toEqual(1);
+        expect(grid.leftToCol(35)).toEqual(2);
+        return expect(grid.leftToCol(50)).toEqual(3);
+      });
+    });
+    describe('#rowToTop', function() {
+      return it('converts a row unit to a CSS top position', function() {
+        expect(grid.rowToTop(-3)).toEqual(-90);
+        expect(grid.rowToTop(-2)).toEqual(-55);
+        expect(grid.rowToTop(-1)).toEqual(-20);
+        expect(grid.rowToTop(0)).toEqual(15);
+        expect(grid.rowToTop(1)).toEqual(50);
+        expect(grid.rowToTop(2)).toEqual(85);
+        return expect(grid.rowToTop(3)).toEqual(120);
+      });
+    });
+    describe('#topToRow', function() {
+      return it('converts a CSS top position to a row unit', function() {
+        expect(grid.topToRow(-90)).toEqual(-3);
+        expect(grid.topToRow(-55)).toEqual(-2);
+        expect(grid.topToRow(-20)).toEqual(-1);
+        expect(grid.topToRow(15)).toEqual(0);
+        expect(grid.topToRow(50)).toEqual(1);
+        expect(grid.topToRow(85)).toEqual(2);
+        return expect(grid.topToRow(120)).toEqual(3);
+      });
+    });
+    describe('#sizeToWidth', function() {
+      return it('converts a grid sizex to a pixel width', function() {
+        expect(function() {
+          return grid.sizeToWidth(-1);
+        }).toThrow();
+        expect(grid.sizeToWidth(0)).toEqual(0);
+        expect(grid.sizeToWidth(1)).toEqual(10);
+        expect(grid.sizeToWidth(2)).toEqual(25);
+        return expect(grid.sizeToWidth(3)).toEqual(40);
+      });
+    });
+    describe('#widthToSize', function() {
+      return it('converts a pixel width to a grid sizex', function() {
+        expect(function() {
+          return grid.widthToSize(-1);
+        }).toThrow();
+        expect(grid.widthToSize(0)).toEqual(0);
+        expect(grid.widthToSize(10)).toEqual(1);
+        expect(grid.widthToSize(25)).toEqual(2);
+        return expect(grid.widthToSize(40)).toEqual(3);
+      });
+    });
+    describe('#sizeToHeight', function() {
+      return it('converts a grid sizey to a pixel height', function() {
+        expect(function() {
+          return grid.sizeToHeight(-1);
+        }).toThrow();
+        expect(grid.sizeToHeight(0)).toEqual(0);
+        expect(grid.sizeToHeight(1)).toEqual(20);
+        expect(grid.sizeToHeight(2)).toEqual(55);
+        return expect(grid.sizeToHeight(3)).toEqual(90);
+      });
+    });
+    describe('#heightToSize', function() {
+      return it('converts a pixel height to a grid sizey', function() {
+        expect(function() {
+          return grid.heightToSize(-1);
+        }).toThrow();
+        expect(grid.heightToSize(0)).toEqual(0);
+        expect(grid.heightToSize(20)).toEqual(1);
+        expect(grid.heightToSize(55)).toEqual(2);
+        return expect(grid.heightToSize(90)).toEqual(3);
+      });
     });
     describe('#set', function() {
       it('sets a grid area with an item', function() {
