@@ -91,11 +91,27 @@ class Grid
 
     for y in [0...sizey] by 1
       tempRow = row + y
-      for x in [0...sizex] by 1
-        if grid[tempRow]
+
+      if grid[tempRow]
+        for x in [0...sizex] by 1
           item = grid[tempRow][col + x]
           items.push(item) if item and inArray(item, items) is -1
-        else
-          break
 
     items
+
+  # Removes items from a grid area.
+  # @param col, row, sizex, sizey [whole number]
+  # @return [null]
+  clear: (col, row, sizex = 1, sizey = 1) ->
+    grid = @grid
+
+    for y in [0...sizey] by 1
+      tempRow = row + y
+
+      if grid[tempRow]
+        for x in [0...sizex] by 1
+          delete grid[tempRow][col + x]
+
+    null
+
+

@@ -190,3 +190,71 @@ describe 'A Grid class', ->
 
       items = grid.get(3, 0, 1, 3)
       expect(items).toEqual([4, 5])
+
+  describe '#clear', ->
+    it 'removes items in a grid area', ->
+      u = undefined
+
+      grid.set(1, 0, 0, 5, 5)
+      expect(grid.grid).toEqual([
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+      ])
+
+      grid.clear(0, 0, 1, 1)
+      grid.clear(1, 1, 1, 1)
+      expect(grid.grid).toEqual([
+        [u, 1, 1, 1, 1]
+        [1, u, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+      ])
+
+      grid.clear(0, 0, 2, 2)
+      expect(grid.grid).toEqual([
+        [u, u, 1, 1, 1]
+        [u, u, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+      ])
+
+      grid.clear(1, 2, 4, 1)
+      expect(grid.grid).toEqual([
+        [u, u, 1, 1, 1]
+        [u, u, 1, 1, 1]
+        [1, u, u, u, u]
+        [1, 1, 1, 1, 1]
+        [1, 1, 1, 1, 1]
+      ])
+
+      grid.clear(3, 0, 2, 5)
+      expect(grid.grid).toEqual([
+        [u, u, 1, u, u]
+        [u, u, 1, u, u]
+        [1, u, u, u, u]
+        [1, 1, 1, u, u]
+        [1, 1, 1, u, u]
+      ])
+
+      grid.clear(-1, 3, 7, 3)
+      expect(grid.grid).toEqual([
+        [u, u, 1, u, u]
+        [u, u, 1, u, u]
+        [1, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+      ])
+
+      grid.clear(-2, -2, 10, 10)
+      expect(grid.grid).toEqual([
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+      ])

@@ -118,18 +118,36 @@ Grid = (function() {
     items = [];
     for (y = _i = 0; _i < sizey; y = _i += 1) {
       tempRow = row + y;
-      for (x = _j = 0; _j < sizex; x = _j += 1) {
-        if (grid[tempRow]) {
+      if (grid[tempRow]) {
+        for (x = _j = 0; _j < sizex; x = _j += 1) {
           item = grid[tempRow][col + x];
           if (item && inArray(item, items) === -1) {
             items.push(item);
           }
-        } else {
-          break;
         }
       }
     }
     return items;
+  };
+
+  Grid.prototype.clear = function(col, row, sizex, sizey) {
+    var grid, tempRow, x, y, _i, _j;
+    if (sizex == null) {
+      sizex = 1;
+    }
+    if (sizey == null) {
+      sizey = 1;
+    }
+    grid = this.grid;
+    for (y = _i = 0; _i < sizey; y = _i += 1) {
+      tempRow = row + y;
+      if (grid[tempRow]) {
+        for (x = _j = 0; _j < sizex; x = _j += 1) {
+          delete grid[tempRow][col + x];
+        }
+      }
+    }
+    return null;
   };
 
   return Grid;

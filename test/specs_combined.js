@@ -131,7 +131,7 @@
         return expect(grid.grid).toEqual([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
       });
     });
-    return describe('#get', function() {
+    describe('#get', function() {
       return it('gets items in a grid area, skipping duplicates', function() {
         var items;
         grid.set(1, 0, 0, 1, 1);
@@ -158,6 +158,27 @@
         expect(items).toEqual([3, 5]);
         items = grid.get(3, 0, 1, 3);
         return expect(items).toEqual([4, 5]);
+      });
+    });
+    return describe('#clear', function() {
+      return it('removes items in a grid area', function() {
+        var u;
+        u = void 0;
+        grid.set(1, 0, 0, 5, 5);
+        expect(grid.grid).toEqual([[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        grid.clear(0, 0, 1, 1);
+        grid.clear(1, 1, 1, 1);
+        expect(grid.grid).toEqual([[u, 1, 1, 1, 1], [1, u, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        grid.clear(0, 0, 2, 2);
+        expect(grid.grid).toEqual([[u, u, 1, 1, 1], [u, u, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        grid.clear(1, 2, 4, 1);
+        expect(grid.grid).toEqual([[u, u, 1, 1, 1], [u, u, 1, 1, 1], [1, u, u, u, u], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        grid.clear(3, 0, 2, 5);
+        expect(grid.grid).toEqual([[u, u, 1, u, u], [u, u, 1, u, u], [1, u, u, u, u], [1, 1, 1, u, u], [1, 1, 1, u, u]]);
+        grid.clear(-1, 3, 7, 3);
+        expect(grid.grid).toEqual([[u, u, 1, u, u], [u, u, 1, u, u], [1, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u]]);
+        grid.clear(-2, -2, 10, 10);
+        return expect(grid.grid).toEqual([[u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u]]);
       });
     });
   });
