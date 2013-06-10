@@ -37,6 +37,20 @@ describe 'A Grid class', ->
         [3, 3, 5, 5]
       ])
 
+      grid.set(6, 4, 0, 3, 1)
+      expect(grid.grid).toEqual([
+        [1, 2, 2, 4, 6, 6, 6]
+        [3, 3, 5, 5]
+        [3, 3, 5, 5]
+      ])
+
+      grid.set(7, 4, 2, 3, 1)
+      expect(grid.grid).toEqual([
+        [1, 2, 2, 4, 6, 6, 6]
+        [3, 3, 5, 5]
+        [3, 3, 5, 5, 7, 7, 7]
+      ])
+
     it 'sets nothing when sizex or sizey are 0', ->
       grid.set(1, 0, 0, 3, 3)
       expect(grid.grid).toEqual([

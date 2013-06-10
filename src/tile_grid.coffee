@@ -12,6 +12,7 @@ class TileGrid extends Grid
     ALL: 8
 
   constructor: (tilex, tiley, marginx, marginy) ->
+    super()
 
     # Accessors
     @tilex = -> tilex
@@ -67,6 +68,9 @@ class TileGrid extends Grid
       else
         (height + marginy) / (tiley + marginy)
 
-  insertAt: (tile, row, col, tradeType = TileGrid.POS_TRADE_TYPES.NEIGHBOR_VERTICAL) ->
+  insertAt: (tile, col, row, tradeType = TileGrid.POS_TRADE_TYPES.NEIGHBOR_VERTICAL) ->
 
+    @set(tile, col, row, tile.sizex, tile.sizey)
+
+    null
 

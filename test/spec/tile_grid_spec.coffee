@@ -1,7 +1,8 @@
 describe 'A TileGrid class', ->
-  grid = null
 
   describe 'conversion utilities', ->
+    grid = null
+
     beforeEach ->
       grid = new TileGrid(10, 20, 5, 15)
 
@@ -81,28 +82,147 @@ describe 'A TileGrid class', ->
         expect(grid.heightToSize(55)).toEqual(2)
         expect(grid.heightToSize(90)).toEqual(3)
 
-    describe '#insertAt', ->
-      grid = null
-      t1x1 = null
-      t1x2 = null
-      t1x3 = null
-      t2x1 = null
-      t2x2 = null
-      t2x3 = null
-      t3x1 = null
-      t3x2 = null
-      t3x3 = null
+  describe '#insertAt', ->
+    u = undefined
+    grid = null
+    t1x1 = null
+    t1x2 = null
+    t1x3 = null
+    t2x1 = null
+    t2x2 = null
+    t2x3 = null
+    t3x1 = null
+    t3x2 = null
+    t3x3 = null
 
-      beforeEach ->
-        grid = new TileGrid(10, 20, 5, 15)
-        t1x1 = new Tile(grid, 1, 1)
-        t1x2 = new Tile(grid, 1, 2)
-        t1x3 = new Tile(grid, 1, 3)
-        t2x1 = new Tile(grid, 2, 1)
-        t2x2 = new Tile(grid, 2, 2)
-        t2x3 = new Tile(grid, 2, 3)
-        t3x1 = new Tile(grid, 3, 1)
-        t3x2 = new Tile(grid, 3, 2)
-        t3x3 = new Tile(grid, 3, 3)
+    beforeEach ->
+      grid = new TileGrid(10, 20, 5, 15)
+      t1x1 = new Tile(grid, 1, 1)
+      t1x2 = new Tile(grid, 1, 2)
+      t1x3 = new Tile(grid, 1, 3)
+      t2x1 = new Tile(grid, 2, 1)
+      t2x2 = new Tile(grid, 2, 2)
+      t2x3 = new Tile(grid, 2, 3)
+      t3x1 = new Tile(grid, 3, 1)
+      t3x2 = new Tile(grid, 3, 2)
+      t3x3 = new Tile(grid, 3, 3)
 
-      it 'inserts a tile at a grid position', ->
+    it 'inserts a tile at a grid position', ->
+      grid.insertAt(t1x1, 0, 0)
+      expect(grid.grid).toEqual([
+        [t1x1]
+      ])
+
+      grid.insertAt(t1x2, 0, 1)
+      expect(grid.grid).toEqual([
+        [t1x1]
+        [t1x2]
+        [t1x2]
+      ])
+
+      grid.insertAt(t2x1, 1, 0)
+      expect(grid.grid).toEqual([
+        [t1x1, t2x1, t2x1]
+        [t1x2]
+        [t1x2]
+      ])
+
+      grid.insertAt(t2x2, 1, 1)
+      expect(grid.grid).toEqual([
+        [t1x1, t2x1, t2x1]
+        [t1x2, t2x2, t2x2]
+        [t1x2, t2x2, t2x2]
+      ])
+
+      grid.insertAt(t3x3, 2, 3)
+      expect(grid.grid).toEqual([
+        [t1x1, t2x1, t2x1]
+        [t1x2, t2x2, t2x2]
+        [t1x2, t2x2, t2x2]
+        [   u,    u, t3x3, t3x3, t3x3]
+        [   u,    u, t3x3, t3x3, t3x3]
+        [   u,    u, t3x3, t3x3, t3x3]
+      ])
+
+    xdescribe 'when a collision occurs', ->
+
+      it 'shifts the colliding tiles down', ->
+        grid.insertAt(t2x1, 0, 0)
+        expect(grid.grid).toEqual([
+          [t2x1, t2x1]
+        ])
+
+        grid.insertAt(t1x1, 0, 0)
+        expect(grid.grid).toEqual([
+          [t1x1,    u]
+          [t2x1, t2x1]
+        ])
+
+        grid.insertAt(t2x2, 1, 0)
+        expect(grid.grid).toEqual([
+          [t1x1, t2x2, t2x2]
+          [   u, t2x2, t2x2]
+          [t2x1, t2x1]
+        ])
+
+        grid.insertAt(t3x1, 0, 0)
+        expect(grid.grid).toEqual([
+          [t3x1, t3x1, t3x1]
+          [t1x1, t2x2, t2x2]
+          [   u, t2x2, t2x2]
+          [t2x1, t2x1]
+        ])
+
+        grid.insertAt(t3x3, 1, 1)
+        expect(grid.grid).toEqual([
+          [t3x1, t3x1, t3x1]
+          [t1x1, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t2x2, t2x2]
+          [   u, t2x2, t2x2]
+          [t2x1, t2x1]
+        ])
+
+        grid.insertAt(t1x2, 3, 0)
+        expect(grid.grid).toEqual([
+          [t3x1, t3x1, t3x1, t1x2]
+          [t1x1,    u,    u, t1x2]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t2x2, t2x2]
+          [   u, t2x2, t2x2]
+          [t2x1, t2x1]
+        ])
+
+        grid.insertAt(t2x3, 0, 5)
+        expect(grid.grid).toEqual([
+          [t3x1, t3x1, t3x1, t1x2]
+          [t1x1,    u,    u, t1x2]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [t2x3, t2x3,    u]
+          [t2x3, t2x3,    u]
+          [t2x3, t2x3]
+          [   u, t2x2, t2x2]
+          [   u, t2x2, t2x2]
+          [t2x1, t2x1]
+        ])
+
+        grid.insertAt(t3x2, 0, 0)
+        expect(grid.grid).toEqual([
+          [t3x2, t3x2, t3x2, t1x2]
+          [t3x2, t3x2, t3x2, t1x2]
+          [t3x1, t3x1, t3x1,    u]
+          [t1x1, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [   u, t3x3, t3x3, t3x3]
+          [t2x3, t2x3,    u]
+          [t2x3, t2x3,    u]
+          [t2x3, t2x3]
+          [   u, t2x2, t2x2]
+          [   u, t2x2, t2x2]
+          [t2x1, t2x1]
+        ])

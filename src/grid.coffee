@@ -15,7 +15,7 @@ class Grid
     grid = @grid
 
     if col < 0 or row < 0 or sizex < 0 or sizey < 0
-      throw 'col, row, sizex and sizey cannot be negative'
+      throw 'col, row, sizex and sizey cannot be negative.'
 
     for y in [0...sizey] by 1
       tempRow = row + y

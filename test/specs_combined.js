@@ -16,7 +16,11 @@
         grid.set(4, 3, 0, 1, 3);
         expect(grid.grid).toEqual([[1, 2, 2, 4], [3, 3, 3, 4], [3, 3, 3, 4]]);
         grid.set(5, 2, 1, 2, 2);
-        return expect(grid.grid).toEqual([[1, 2, 2, 4], [3, 3, 5, 5], [3, 3, 5, 5]]);
+        expect(grid.grid).toEqual([[1, 2, 2, 4], [3, 3, 5, 5], [3, 3, 5, 5]]);
+        grid.set(6, 4, 0, 3, 1);
+        expect(grid.grid).toEqual([[1, 2, 2, 4, 6, 6, 6], [3, 3, 5, 5], [3, 3, 5, 5]]);
+        grid.set(7, 4, 2, 3, 1);
+        return expect(grid.grid).toEqual([[1, 2, 2, 4, 6, 6, 6], [3, 3, 5, 5], [3, 3, 5, 5, 7, 7, 7]]);
       });
       it('sets nothing when sizex or sizey are 0', function() {
         grid.set(1, 0, 0, 3, 3);
@@ -99,9 +103,9 @@
 
 (function() {
   describe('A TileGrid class', function() {
-    var grid;
-    grid = null;
-    return describe('conversion utilities', function() {
+    describe('conversion utilities', function() {
+      var grid;
+      grid = null;
       beforeEach(function() {
         return grid = new TileGrid(10, 20, 5, 15);
       });
@@ -182,7 +186,7 @@
           return expect(grid.sizeToHeight(3)).toEqual(90);
         });
       });
-      describe('#heightToSize', function() {
+      return describe('#heightToSize', function() {
         return it('converts a pixel height to a grid sizey', function() {
           expect(function() {
             return grid.heightToSize(-1);
@@ -193,31 +197,63 @@
           return expect(grid.heightToSize(90)).toEqual(3);
         });
       });
-      return describe('#insertAt', function() {
-        var t1x1, t1x2, t1x3, t2x1, t2x2, t2x3, t3x1, t3x2, t3x3;
-        grid = null;
-        t1x1 = null;
-        t1x2 = null;
-        t1x3 = null;
-        t2x1 = null;
-        t2x2 = null;
-        t2x3 = null;
-        t3x1 = null;
-        t3x2 = null;
-        t3x3 = null;
-        beforeEach(function() {
-          grid = new TileGrid(10, 20, 5, 15);
-          t1x1 = new Tile(grid, 1, 1);
-          t1x2 = new Tile(grid, 1, 2);
-          t1x3 = new Tile(grid, 1, 3);
-          t2x1 = new Tile(grid, 2, 1);
-          t2x2 = new Tile(grid, 2, 2);
-          t2x3 = new Tile(grid, 2, 3);
-          t3x1 = new Tile(grid, 3, 1);
-          t3x2 = new Tile(grid, 3, 2);
-          return t3x3 = new Tile(grid, 3, 3);
+    });
+    return describe('#insertAt', function() {
+      var grid, t1x1, t1x2, t1x3, t2x1, t2x2, t2x3, t3x1, t3x2, t3x3, u;
+      u = void 0;
+      grid = null;
+      t1x1 = null;
+      t1x2 = null;
+      t1x3 = null;
+      t2x1 = null;
+      t2x2 = null;
+      t2x3 = null;
+      t3x1 = null;
+      t3x2 = null;
+      t3x3 = null;
+      beforeEach(function() {
+        grid = new TileGrid(10, 20, 5, 15);
+        t1x1 = new Tile(grid, 1, 1);
+        t1x2 = new Tile(grid, 1, 2);
+        t1x3 = new Tile(grid, 1, 3);
+        t2x1 = new Tile(grid, 2, 1);
+        t2x2 = new Tile(grid, 2, 2);
+        t2x3 = new Tile(grid, 2, 3);
+        t3x1 = new Tile(grid, 3, 1);
+        t3x2 = new Tile(grid, 3, 2);
+        return t3x3 = new Tile(grid, 3, 3);
+      });
+      it('inserts a tile at a grid position', function() {
+        grid.insertAt(t1x1, 0, 0);
+        expect(grid.grid).toEqual([[t1x1]]);
+        grid.insertAt(t1x2, 0, 1);
+        expect(grid.grid).toEqual([[t1x1], [t1x2], [t1x2]]);
+        grid.insertAt(t2x1, 1, 0);
+        expect(grid.grid).toEqual([[t1x1, t2x1, t2x1], [t1x2], [t1x2]]);
+        grid.insertAt(t2x2, 1, 1);
+        expect(grid.grid).toEqual([[t1x1, t2x1, t2x1], [t1x2, t2x2, t2x2], [t1x2, t2x2, t2x2]]);
+        grid.insertAt(t3x3, 2, 3);
+        return expect(grid.grid).toEqual([[t1x1, t2x1, t2x1], [t1x2, t2x2, t2x2], [t1x2, t2x2, t2x2], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3]]);
+      });
+      return xdescribe('when a collision occurs', function() {
+        return it('shifts the colliding tiles down', function() {
+          grid.insertAt(t2x1, 0, 0);
+          expect(grid.grid).toEqual([[t2x1, t2x1]]);
+          grid.insertAt(t1x1, 0, 0);
+          expect(grid.grid).toEqual([[t1x1, u], [t2x1, t2x1]]);
+          grid.insertAt(t2x2, 1, 0);
+          expect(grid.grid).toEqual([[t1x1, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          grid.insertAt(t3x1, 0, 0);
+          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1], [t1x1, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          grid.insertAt(t3x3, 1, 1);
+          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          grid.insertAt(t1x2, 3, 0);
+          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1, t1x2], [t1x1, u, u, t1x2], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          grid.insertAt(t2x3, 0, 5);
+          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1, t1x2], [t1x1, u, u, t1x2], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u], [t2x3, t2x3, u], [t2x3, t2x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          grid.insertAt(t3x2, 0, 0);
+          return expect(grid.grid).toEqual([[t3x2, t3x2, t3x2, t1x2], [t3x2, t3x2, t3x2, t1x2], [t3x1, t3x1, t3x1, u], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u], [t2x3, t2x3, u], [t2x3, t2x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
         });
-        return it('inserts a tile at a grid position', function() {});
       });
     });
   });
@@ -225,13 +261,6 @@
 }).call(this);
 
 (function() {
-  describe('A tile class', function() {
-    var grid;
-    grid = null;
-    beforeEach(function() {
-      return grid = new Grid(10, 20, 5, 15);
-    });
-    return describe('#moveTo', function() {});
-  });
+
 
 }).call(this);

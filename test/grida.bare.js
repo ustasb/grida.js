@@ -27,7 +27,7 @@ Grid = (function() {
     }
     grid = this.grid;
     if (col < 0 || row < 0 || sizex < 0 || sizey < 0) {
-      throw 'col, row, sizex and sizey cannot be negative';
+      throw 'col, row, sizex and sizey cannot be negative.';
     }
     for (y = _i = 0; _i < sizey; y = _i += 1) {
       tempRow = row + y;
@@ -110,6 +110,7 @@ TileGrid = (function(_super) {
   };
 
   function TileGrid(tilex, tiley, marginx, marginy) {
+    TileGrid.__super__.constructor.call(this);
     this.tilex = function() {
       return tilex;
     };
@@ -176,10 +177,12 @@ TileGrid = (function(_super) {
     };
   }
 
-  TileGrid.prototype.insertAt = function(tile, row, col, tradeType) {
+  TileGrid.prototype.insertAt = function(tile, col, row, tradeType) {
     if (tradeType == null) {
       tradeType = TileGrid.POS_TRADE_TYPES.NEIGHBOR_VERTICAL;
     }
+    this.set(tile, col, row, tile.sizex, tile.sizey);
+    return null;
   };
 
   return TileGrid;
