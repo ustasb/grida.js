@@ -235,7 +235,7 @@
         grid.insertAt(t3x3, 2, 3);
         return expect(grid.grid).toEqual([[t1x1, t2x1, t2x1], [t1x2, t2x2, t2x2], [t1x2, t2x2, t2x2], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3]]);
       });
-      return xdescribe('when a collision occurs', function() {
+      return describe('when a collision occurs', function() {
         return it('shifts the colliding tiles down', function() {
           grid.insertAt(t2x1, 0, 0);
           expect(grid.grid).toEqual([[t2x1, t2x1]]);
@@ -252,7 +252,7 @@
           grid.insertAt(t2x3, 0, 5);
           expect(grid.grid).toEqual([[t3x1, t3x1, t3x1, t1x2], [t1x1, u, u, t1x2], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u], [t2x3, t2x3, u], [t2x3, t2x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
           grid.insertAt(t3x2, 0, 0);
-          return expect(grid.grid).toEqual([[t3x2, t3x2, t3x2, t1x2], [t3x2, t3x2, t3x2, t1x2], [t3x1, t3x1, t3x1, u], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u], [t2x3, t2x3, u], [t2x3, t2x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          return expect(grid.grid).toEqual([[t3x2, t3x2, t3x2, t1x2], [t3x2, t3x2, t3x2, t1x2], [t3x1, t3x1, t3x1, u], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u], [t2x3, t2x3], [t2x3, t2x3, u], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
         });
       });
     });

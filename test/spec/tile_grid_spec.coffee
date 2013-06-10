@@ -144,7 +144,7 @@ describe 'A TileGrid class', ->
         [   u,    u, t3x3, t3x3, t3x3]
       ])
 
-    xdescribe 'when a collision occurs', ->
+    describe 'when a collision occurs', ->
 
       it 'shifts the colliding tiles down', ->
         grid.insertAt(t2x1, 0, 0)
@@ -220,8 +220,8 @@ describe 'A TileGrid class', ->
           [   u, t3x3, t3x3, t3x3]
           [   u, t3x3, t3x3, t3x3]
           [t2x3, t2x3,    u]
-          [t2x3, t2x3,    u]
           [t2x3, t2x3]
+          [t2x3, t2x3,    u]
           [   u, t2x2, t2x2]
           [   u, t2x2, t2x2]
           [t2x1, t2x1]

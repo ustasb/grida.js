@@ -168,11 +168,19 @@
       };
     }
 
-    TileGrid.prototype.insertAt = function(tile, col, row, tradeType) {
-      if (tradeType == null) {
-        tradeType = TileGrid.POS_TRADE_TYPES.NEIGHBOR_VERTICAL;
+    TileGrid.prototype.insertAt = function(focusTile, col, row) {
+      var dy, obstructingTiles, sizex, sizey, tile, _i;
+      sizex = focusTile.sizex;
+      sizey = focusTile.sizey;
+      obstructingTiles = this.get(col, row, sizex, sizey);
+      for (_i = obstructingTiles.length - 1; _i >= 0; _i += -1) {
+        tile = obstructingTiles[_i];
+        this.clear(tile.col, tile.row, tile.sizex, tile.sizey);
+        dy = (row + sizey) - tile.row;
+        this.insertAt(tile, tile.col, tile.row + dy);
       }
-      this.set(tile, col, row, tile.sizex, tile.sizey);
+      this.set(focusTile, col, row, sizex, sizey);
+      focusTile.moveTo(col, row);
       return null;
     };
 
@@ -181,17 +189,23 @@
   })(Grid);
 
   Tile = (function() {
+    var id;
+
+    id = 0;
+
     function Tile(grid, sizex, sizey) {
       this.grid = grid;
       this.sizex = sizex != null ? sizex : 1;
       this.sizey = sizey != null ? sizey : 1;
+      this.id = id++;
       this.col = null;
       this.row = null;
     }
 
     Tile.prototype.moveTo = function(col, row) {
       this.col = col;
-      return this.row = row;
+      this.row = row;
+      return console.log(this.id);
     };
 
     return Tile;

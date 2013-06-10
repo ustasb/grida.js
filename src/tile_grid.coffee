@@ -68,9 +68,19 @@ class TileGrid extends Grid
       else
         (height + marginy) / (tiley + marginy)
 
-  insertAt: (tile, col, row, tradeType = TileGrid.POS_TRADE_TYPES.NEIGHBOR_VERTICAL) ->
+  insertAt: (focusTile, col, row) ->
+    sizex = focusTile.sizex
+    sizey = focusTile.sizey
 
-    @set(tile, col, row, tile.sizex, tile.sizey)
+    # Try folding items up...
+    obstructingTiles = @get(col, row, sizex, sizey)
+    for tile in obstructingTiles by -1
+      @clear(tile.col, tile.row, tile.sizex, tile.sizey)
+      dy = (row + sizey) - tile.row
+      @insertAt(tile, tile.col, tile.row + dy)
+
+    @set(focusTile, col, row, sizex, sizey)
+    focusTile.moveTo(col, row)
 
     null
 
