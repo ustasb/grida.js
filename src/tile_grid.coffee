@@ -72,15 +72,35 @@ class TileGrid extends Grid
     sizex = focusTile.sizex
     sizey = focusTile.sizey
 
-    # Try folding items up...
     obstructingTiles = @get(col, row, sizex, sizey)
     for tile in obstructingTiles by -1
       @clear(tile.col, tile.row, tile.sizex, tile.sizey)
       dy = (row + sizey) - tile.row
       @insertAt(tile, tile.col, tile.row + dy)
 
+    if focusTile.hasPosition()
+      @clear(focusTile.col, focusTile.row, sizex, sizey)
     @set(focusTile, col, row, sizex, sizey)
     focusTile.moveTo(col, row)
 
     null
+
+  collapseAboveEmptySpace: (focusTile, minRow = 0) ->
+    return null if focusTile.hasPosition() is false
+
+    newRow = minRow
+    aboveTiles = @get(focusTile.col, minRow, focusTile.sizex, focusTile.row - minRow)
+
+    for tile in aboveTiles by -1
+      neighborRow = tile.row + tile.sizey
+      if neighborRow > newRow
+        newRow = neighborRow
+
+    if newRow isnt focusTile.row
+      @clear(focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey)
+      @set(focusTile, focusTile.col, newRow, focusTile.sizex, focusTile.sizey)
+      focusTile.moveTo(focusTile.col, newRow)
+
+    null
+
 

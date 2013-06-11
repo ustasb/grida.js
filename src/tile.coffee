@@ -8,5 +8,8 @@ class Tile
     @col = null
     @row = null
 
+  hasPosition: ->
+    @col isnt null and @row isnt null
+
   moveTo: (@col, @row) ->
-    console.log(@id)
+    #console.log(@id)

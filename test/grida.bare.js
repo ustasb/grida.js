@@ -188,8 +188,36 @@ TileGrid = (function(_super) {
       dy = (row + sizey) - tile.row;
       this.insertAt(tile, tile.col, tile.row + dy);
     }
+    if (focusTile.hasPosition()) {
+      this.clear(focusTile.col, focusTile.row, sizex, sizey);
+    }
     this.set(focusTile, col, row, sizex, sizey);
     focusTile.moveTo(col, row);
+    return null;
+  };
+
+  TileGrid.prototype.collapseAboveEmptySpace = function(focusTile, minRow) {
+    var aboveTiles, neighborRow, newRow, tile, _i;
+    if (minRow == null) {
+      minRow = 0;
+    }
+    if (focusTile.hasPosition() === false) {
+      return null;
+    }
+    newRow = minRow;
+    aboveTiles = this.get(focusTile.col, minRow, focusTile.sizex, focusTile.row - minRow);
+    for (_i = aboveTiles.length - 1; _i >= 0; _i += -1) {
+      tile = aboveTiles[_i];
+      neighborRow = tile.row + tile.sizey;
+      if (neighborRow > newRow) {
+        newRow = neighborRow;
+      }
+    }
+    if (newRow !== focusTile.row) {
+      this.clear(focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey);
+      this.set(focusTile, focusTile.col, newRow, focusTile.sizex, focusTile.sizey);
+      focusTile.moveTo(focusTile.col, newRow);
+    }
     return null;
   };
 
@@ -213,10 +241,13 @@ Tile = (function() {
     this.row = null;
   }
 
+  Tile.prototype.hasPosition = function() {
+    return this.col !== null && this.row !== null;
+  };
+
   Tile.prototype.moveTo = function(col, row) {
     this.col = col;
     this.row = row;
-    return console.log(this.id);
   };
 
   return Tile;
