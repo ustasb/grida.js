@@ -32,7 +32,8 @@
 
 (function() {
   describe('A Grid class', function() {
-    var grid;
+    var grid, u;
+    u = void 0;
     grid = null;
     beforeEach(function() {
       return grid = new Grid;
@@ -40,30 +41,30 @@
     describe('#set', function() {
       it('sets a grid area with an item', function() {
         grid.set(1, 0, 0, 1, 1);
-        expect(grid.grid).toEqual([[1]]);
+        expect(grid.grid).toLookLike([[1]]);
         grid.set(2, 1, 0, 2, 1);
-        expect(grid.grid).toEqual([[1, 2, 2]]);
+        expect(grid.grid).toLookLike([[1, 2, 2]]);
         grid.set(3, 0, 1, 3, 2);
-        expect(grid.grid).toEqual([[1, 2, 2], [3, 3, 3], [3, 3, 3]]);
+        expect(grid.grid).toLookLike([[1, 2, 2], [3, 3, 3], [3, 3, 3]]);
         grid.set(4, 3, 0, 1, 3);
-        expect(grid.grid).toEqual([[1, 2, 2, 4], [3, 3, 3, 4], [3, 3, 3, 4]]);
+        expect(grid.grid).toLookLike([[1, 2, 2, 4], [3, 3, 3, 4], [3, 3, 3, 4]]);
         grid.set(5, 2, 1, 2, 2);
-        expect(grid.grid).toEqual([[1, 2, 2, 4], [3, 3, 5, 5], [3, 3, 5, 5]]);
+        expect(grid.grid).toLookLike([[1, 2, 2, 4], [3, 3, 5, 5], [3, 3, 5, 5]]);
         grid.set(6, 4, 0, 3, 1);
-        expect(grid.grid).toEqual([[1, 2, 2, 4, 6, 6, 6], [3, 3, 5, 5], [3, 3, 5, 5]]);
+        expect(grid.grid).toLookLike([[1, 2, 2, 4, 6, 6, 6], [3, 3, 5, 5, u, u, u], [3, 3, 5, 5, u, u, u]]);
         grid.set(7, 4, 2, 3, 1);
-        return expect(grid.grid).toEqual([[1, 2, 2, 4, 6, 6, 6], [3, 3, 5, 5], [3, 3, 5, 5, 7, 7, 7]]);
+        return expect(grid.grid).toLookLike([[1, 2, 2, 4, 6, 6, 6], [3, 3, 5, 5, u, u, u], [3, 3, 5, 5, 7, 7, 7]]);
       });
       it('sets nothing when sizex or sizey are 0', function() {
         grid.set(1, 0, 0, 3, 3);
-        expect(grid.grid).toEqual([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
+        expect(grid.grid).toLookLike([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
         grid.set(2, 0, 0, 3, 0);
         grid.set(2, 0, 0, 0, 3);
-        return expect(grid.grid).toEqual([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
+        return expect(grid.grid).toLookLike([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
       });
       return it('throws an error if col, row, sizex or sizey are < 0', function() {
         grid.set(1, 0, 0, 3, 3);
-        expect(grid.grid).toEqual([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
+        expect(grid.grid).toLookLike([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
         expect(function() {
           return grid.set(2, -1, 0, 3, 0);
         }).toThrow();
@@ -76,7 +77,7 @@
         expect(function() {
           return grid.set(2, 0, 0, 3, -1);
         }).toThrow();
-        return expect(grid.grid).toEqual([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
+        return expect(grid.grid).toLookLike([[1, 1, 1], [1, 1, 1], [1, 1, 1]]);
       });
     });
     describe('#get', function() {
@@ -87,7 +88,7 @@
         grid.set(3, 0, 1, 3, 2);
         grid.set(4, 3, 0, 1, 3);
         grid.set(5, 2, 1, 2, 2);
-        expect(grid.grid).toEqual([[1, 2, 2, 4], [3, 3, 5, 5], [3, 3, 5, 5]]);
+        expect(grid.grid).toLookLike([[1, 2, 2, 4], [3, 3, 5, 5], [3, 3, 5, 5]]);
         items = grid.get(-1, -1, 1, 1);
         expect(items).toEqual([]);
         items = grid.get(0, 0, -1, 1);
@@ -110,23 +111,21 @@
     });
     return describe('#clear', function() {
       return it('removes items in a grid area', function() {
-        var u;
-        u = void 0;
         grid.set(1, 0, 0, 5, 5);
-        expect(grid.grid).toEqual([[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        expect(grid.grid).toLookLike([[1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
         grid.clear(0, 0, 1, 1);
         grid.clear(1, 1, 1, 1);
-        expect(grid.grid).toEqual([[u, 1, 1, 1, 1], [1, u, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        expect(grid.grid).toLookLike([[u, 1, 1, 1, 1], [1, u, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
         grid.clear(0, 0, 2, 2);
-        expect(grid.grid).toEqual([[u, u, 1, 1, 1], [u, u, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        expect(grid.grid).toLookLike([[u, u, 1, 1, 1], [u, u, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
         grid.clear(1, 2, 4, 1);
-        expect(grid.grid).toEqual([[u, u, 1, 1, 1], [u, u, 1, 1, 1], [1, u, u, u, u], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
+        expect(grid.grid).toLookLike([[u, u, 1, 1, 1], [u, u, 1, 1, 1], [1, u, u, u, u], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1]]);
         grid.clear(3, 0, 2, 5);
-        expect(grid.grid).toEqual([[u, u, 1, u, u], [u, u, 1, u, u], [1, u, u, u, u], [1, 1, 1, u, u], [1, 1, 1, u, u]]);
+        expect(grid.grid).toLookLike([[u, u, 1, u, u], [u, u, 1, u, u], [1, u, u, u, u], [1, 1, 1, u, u], [1, 1, 1, u, u]]);
         grid.clear(-1, 3, 7, 3);
-        expect(grid.grid).toEqual([[u, u, 1, u, u], [u, u, 1, u, u], [1, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u]]);
+        expect(grid.grid).toLookLike([[u, u, 1, u, u], [u, u, 1, u, u], [1, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u]]);
         grid.clear(-2, -2, 10, 10);
-        return expect(grid.grid).toEqual([[u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u]]);
+        return expect(grid.grid).toLookLike([[u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u]]);
       });
     });
   });
