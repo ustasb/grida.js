@@ -1,4 +1,36 @@
 (function() {
+  beforeEach(function() {
+    return this.addMatchers({
+      toLookLike: (function() {
+        var looksLike;
+        looksLike = function(a, b) {
+          var item, row, x, y, _i, _j, _len, _len1;
+          for (y = _i = 0, _len = a.length; _i < _len; y = _i += 1) {
+            row = a[y];
+            if (row != null) {
+              for (x = _j = 0, _len1 = row.length; _j < _len1; x = _j += 1) {
+                item = row[x];
+                if ((item != null) && ((b[y] != null) === false || item !== b[y][x])) {
+                  return false;
+                }
+              }
+            }
+          }
+          return true;
+        };
+        return function(expected) {
+          if (!$.isArray(this.actual) || !$.isArray(expected)) {
+            throw 'Matcher toLookLike() can only compare arrays.';
+          }
+          return looksLike(this.actual, expected) && looksLike(expected, this.actual);
+        };
+      })()
+    });
+  });
+
+}).call(this);
+
+(function() {
   describe('A Grid class', function() {
     var grid;
     grid = null;
@@ -117,15 +149,15 @@
     t3x3 = null;
     beforeEach(function() {
       grid = new TileGrid(10, 20, 5, 15);
-      t1x1 = new Tile(grid, 1, 1);
-      t1x2 = new Tile(grid, 1, 2);
-      t1x3 = new Tile(grid, 1, 3);
-      t2x1 = new Tile(grid, 2, 1);
-      t2x2 = new Tile(grid, 2, 2);
-      t2x3 = new Tile(grid, 2, 3);
-      t3x1 = new Tile(grid, 3, 1);
-      t3x2 = new Tile(grid, 3, 2);
-      return t3x3 = new Tile(grid, 3, 3);
+      t1x1 = new Tile(1, 1);
+      t1x2 = new Tile(1, 2);
+      t1x3 = new Tile(1, 3);
+      t2x1 = new Tile(2, 1);
+      t2x2 = new Tile(2, 2);
+      t2x3 = new Tile(2, 3);
+      t3x1 = new Tile(3, 1);
+      t3x2 = new Tile(3, 2);
+      return t3x3 = new Tile(3, 3);
     });
     describe('conversion utilities', function() {
       describe('#colToLeft', function() {
@@ -218,60 +250,83 @@
       });
     });
     describe('#collapseAboveEmptySpace', function() {
-      return it('moves a tile upward until a solid boundary is reached', function() {
+      it('target row cannot be less than 0', function() {
         grid.insertAt(t1x1, 0, 1);
-        expect(grid.grid).toEqual([[], [t1x1]]);
+        expect(grid.grid).toLookLike([[u], [t1x1]]);
+        return expect(function() {
+          return grid.collapseAboveEmptySpace(t1x1, -1);
+        }).toThrow();
+      });
+      return it('moves a tile upward until a barrier is reached', function() {
+        grid.insertAt(t1x1, 0, 1);
+        expect(grid.grid).toLookLike([[u], [t1x1]]);
         grid.collapseAboveEmptySpace(t1x1, 0);
-        expect(grid.grid).toEqual([[t1x1], [u]]);
+        expect(grid.grid).toLookLike([[t1x1]]);
         grid.insertAt(t2x2, 0, 4);
-        expect(grid.grid).toEqual([[t1x1], [u], u, u, [t2x2, t2x2], [t2x2, t2x2]]);
+        expect(grid.grid).toLookLike([[t1x1, u], [u, u], [u, u], [u, u], [t2x2, t2x2], [t2x2, t2x2]]);
         grid.collapseAboveEmptySpace(t2x2, 0);
-        expect(grid.grid).toEqual([[t1x1], [t2x2, t2x2], [t2x2, t2x2], u, [u, u], [u, u]]);
+        expect(grid.grid).toLookLike([[t1x1, u], [t2x2, t2x2], [t2x2, t2x2]]);
         grid.insertAt(t3x2, 2, 4);
-        expect(grid.grid).toEqual([[t1x1], [t2x2, t2x2], [t2x2, t2x2], u, [u, u, t3x2, t3x2, t3x2], [u, u, t3x2, t3x2, t3x2]]);
+        expect(grid.grid).toLookLike([[t1x1, u, u, u, u], [t2x2, t2x2, u, u, u], [t2x2, t2x2, u, u, u], [u, u, u, u, u], [u, u, t3x2, t3x2, t3x2], [u, u, t3x2, t3x2, t3x2]]);
         grid.collapseAboveEmptySpace(t3x2, 0);
-        expect(grid.grid).toEqual([[t1x1, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2], u, [u, u, u, u, u], [u, u, u, u, u]]);
+        expect(grid.grid).toLookLike([[t1x1, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2, u, u, u]]);
         grid.insertAt(t2x1, 1, 4);
-        expect(grid.grid).toEqual([[t1x1, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2], u, [u, t2x1, t2x1, u, u], [u, u, u, u, u]]);
+        expect(grid.grid).toLookLike([[t1x1, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2, u, u, u], [u, u, u, u, u], [u, t2x1, t2x1, u, u]]);
         grid.collapseAboveEmptySpace(t2x1, 0);
-        expect(grid.grid).toEqual([[t1x1, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2], [u, t2x1, t2x1], [u, u, u, u, u], [u, u, u, u, u]]);
+        expect(grid.grid).toLookLike([[t1x1, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2, u, u, u], [u, t2x1, t2x1, u, u]]);
         grid.insertAt(t1x1, 3, 5);
-        expect(grid.grid).toEqual([[u, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2], [u, t2x1, t2x1], [u, u, u, u, u], [u, u, u, t1x1, u]]);
+        expect(grid.grid).toLookLike([[u, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2, u, u, u], [u, t2x1, t2x1, u, u], [u, u, u, u, u], [u, u, u, t1x1, u]]);
         grid.collapseAboveEmptySpace(t1x1, 3);
-        return expect(grid.grid).toEqual([[u, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2], [u, t2x1, t2x1, t1x1], [u, u, u, u, u], [u, u, u, u, u]]);
+        expect(grid.grid).toLookLike([[u, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2, u, u, u], [u, t2x1, t2x1, t1x1, u]]);
+        grid.insertAt(t1x2, 4, 4);
+        expect(grid.grid).toLookLike([[u, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2, u, u, u], [u, t2x1, t2x1, t1x1, u], [u, u, u, u, t1x2], [u, u, u, u, t1x2]]);
+        grid.collapseAboveEmptySpace(t1x2, 0);
+        return expect(grid.grid).toLookLike([[u, u, t3x2, t3x2, t3x2], [t2x2, t2x2, t3x2, t3x2, t3x2], [t2x2, t2x2, u, u, t1x2], [u, t2x1, t2x1, t1x1, t1x2]]);
       });
     });
     return describe('#insertAt', function() {
       it('inserts a tile at a grid position', function() {
         grid.insertAt(t1x1, 0, 0);
-        expect(grid.grid).toEqual([[t1x1]]);
+        expect(grid.grid).toLookLike([[t1x1]]);
         grid.insertAt(t1x2, 0, 1);
-        expect(grid.grid).toEqual([[t1x1], [t1x2], [t1x2]]);
+        expect(grid.grid).toLookLike([[t1x1], [t1x2], [t1x2]]);
         grid.insertAt(t2x1, 1, 0);
-        expect(grid.grid).toEqual([[t1x1, t2x1, t2x1], [t1x2], [t1x2]]);
+        expect(grid.grid).toLookLike([[t1x1, t2x1, t2x1], [t1x2, u, u], [t1x2, u, u]]);
         grid.insertAt(t2x2, 1, 1);
-        expect(grid.grid).toEqual([[t1x1, t2x1, t2x1], [t1x2, t2x2, t2x2], [t1x2, t2x2, t2x2]]);
+        expect(grid.grid).toLookLike([[t1x1, t2x1, t2x1], [t1x2, t2x2, t2x2], [t1x2, t2x2, t2x2]]);
         grid.insertAt(t3x3, 2, 3);
-        return expect(grid.grid).toEqual([[t1x1, t2x1, t2x1], [t1x2, t2x2, t2x2], [t1x2, t2x2, t2x2], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3]]);
+        expect(grid.grid).toLookLike([[t1x1, t2x1, t2x1, u, u], [t1x2, t2x2, t2x2, u, u], [t1x2, t2x2, t2x2, u, u], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3], [u, u, t3x3, t3x3, t3x3]]);
+        grid.insertAt(t1x2, 0, 4);
+        expect(grid.grid).toLookLike([[t1x1, t2x1, t2x1, u, u], [u, t2x2, t2x2, u, u], [u, t2x2, t2x2, u, u], [u, u, t3x3, t3x3, t3x3], [t1x2, u, t3x3, t3x3, t3x3], [t1x2, u, t3x3, t3x3, t3x3]]);
+        grid.insertAt(t2x1, 3, 2);
+        expect(grid.grid).toLookLike([[t1x1, u, u, u, u], [u, t2x2, t2x2, u, u], [u, t2x2, t2x2, t2x1, t2x1], [u, u, t3x3, t3x3, t3x3], [t1x2, u, t3x3, t3x3, t3x3], [t1x2, u, t3x3, t3x3, t3x3]]);
+        grid.insertAt(t3x3, 0, 6);
+        return expect(grid.grid).toLookLike([[t1x1, u, u, u, u], [u, t2x2, t2x2, u, u], [u, t2x2, t2x2, t2x1, t2x1], [u, u, u, u, u], [t1x2, u, u, u, u], [t1x2, u, u, u, u], [t3x3, t3x3, t3x3, u, u], [t3x3, t3x3, t3x3, u, u], [t3x3, t3x3, t3x3, u, u]]);
       });
       return describe('when a collision occurs', function() {
         return it('shifts the colliding tiles down', function() {
           grid.insertAt(t2x1, 0, 0);
-          expect(grid.grid).toEqual([[t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t2x1, t2x1]]);
           grid.insertAt(t1x1, 0, 0);
-          expect(grid.grid).toEqual([[t1x1, u], [t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t1x1, u], [t2x1, t2x1]]);
           grid.insertAt(t2x2, 1, 0);
-          expect(grid.grid).toEqual([[t1x1, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t1x1, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1, u]]);
           grid.insertAt(t3x1, 0, 0);
-          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1], [t1x1, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t3x1, t3x1, t3x1], [t1x1, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1, u]]);
           grid.insertAt(t3x3, 1, 1);
-          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t3x1, t3x1, t3x1, u], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t2x2, t2x2, u], [u, t2x2, t2x2, u], [t2x1, t2x1, u, u]]);
           grid.insertAt(t1x2, 3, 0);
-          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1, t1x2], [t1x1, u, u, t1x2], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t3x1, t3x1, t3x1, t1x2], [t1x1, u, u, t1x2], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t2x2, t2x2, u], [u, t2x2, t2x2, u], [t2x1, t2x1, u, u]]);
           grid.insertAt(t2x3, 0, 5);
-          expect(grid.grid).toEqual([[t3x1, t3x1, t3x1, t1x2], [t1x1, u, u, t1x2], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u], [t2x3, t2x3, u], [t2x3, t2x3], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t3x1, t3x1, t3x1, t1x2], [t1x1, u, u, t1x2], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [u, t2x2, t2x2, u], [u, t2x2, t2x2, u], [t2x1, t2x1, u, u]]);
           grid.insertAt(t3x2, 0, 0);
-          return expect(grid.grid).toEqual([[t3x2, t3x2, t3x2, t1x2], [t3x2, t3x2, t3x2, t1x2], [t3x1, t3x1, t3x1, u], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u], [t2x3, t2x3], [t2x3, t2x3, u], [u, t2x2, t2x2], [u, t2x2, t2x2], [t2x1, t2x1]]);
+          expect(grid.grid).toLookLike([[t3x2, t3x2, t3x2, t1x2], [t3x2, t3x2, t3x2, t1x2], [t3x1, t3x1, t3x1, u], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [u, t2x2, t2x2, u], [u, t2x2, t2x2, u], [t2x1, t2x1, u, u]]);
+          grid.insertAt(t3x2, 0, 3);
+          expect(grid.grid).toLookLike([[u, u, u, t1x2], [u, u, u, t1x2], [t3x1, t3x1, t3x1, u], [t3x2, t3x2, t3x2, u], [t3x2, t3x2, t3x2, u], [t1x1, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [u, t2x2, t2x2, u], [u, t2x2, t2x2, u], [t2x1, t2x1, u, u]]);
+          grid.insertAt(t3x3, 1, 7);
+          expect(grid.grid).toLookLike([[u, u, u, t1x2], [u, u, u, t1x2], [t3x1, t3x1, t3x1, u], [t3x2, t3x2, t3x2, u], [t3x2, t3x2, t3x2, u], [t1x1, u, u, u], [u, u, u, u], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [u, t2x2, t2x2, u], [u, t2x2, t2x2, u], [t2x1, t2x1, u, u]]);
+          grid.insertAt(t3x3, 0, 4);
+          return expect(grid.grid).toLookLike([[u, u, u, t1x2], [u, u, u, t1x2], [t3x1, t3x1, t3x1, u], [u, u, u, u], [t3x3, t3x3, t3x3, u], [t3x3, t3x3, t3x3, u], [t3x3, t3x3, t3x3, u], [t3x2, t3x2, t3x2, u], [t3x2, t3x2, t3x2, u], [t1x1, u, u, u], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [t2x3, t2x3, u, u], [u, t2x2, t2x2, u], [u, t2x2, t2x2, u], [t2x1, t2x1, u, u]]);
         });
       });
     });

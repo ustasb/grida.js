@@ -28,7 +28,7 @@ class Grid
 
   # Gets items in a grid area, skipping duplicates.
   # @param col, row, sizex, sizey [whole number]
-  # @return [Array]
+  # @return [Array] Items in smaller rows are first.
   get: (col, row, sizex = 1, sizey = 1) ->
     grid = @grid
     inArray = $.inArray

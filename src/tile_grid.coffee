@@ -14,7 +14,6 @@ class TileGrid extends Grid
   constructor: (tilex, tiley, marginx, marginy) ->
     super()
 
-    # Accessors
     @tilex = -> tilex
     @tiley = -> tiley
     @marginx = -> marginx
@@ -68,39 +67,47 @@ class TileGrid extends Grid
       else
         (height + marginy) / (tiley + marginy)
 
+  # Inserts a tile at a position and shifts down any obstructing tiles.
+  # @param focusTile [Tile] the tile to move
+  # @param col, row [whole number]
+  # @return [null]
   insertAt: (focusTile, col, row) ->
-    sizex = focusTile.sizex
-    sizey = focusTile.sizey
+    focusTile.releasePosition()
 
-    obstructingTiles = @get(col, row, sizex, sizey)
+    # Tiles are in row order (smaller rows first).
+    obstructingTiles = @get(col, row, focusTile.sizex, focusTile.sizey)
     for tile in obstructingTiles by -1
       @clear(tile.col, tile.row, tile.sizex, tile.sizey)
-      dy = (row + sizey) - tile.row
+      dy = (row + focusTile.sizey) - tile.row
       @insertAt(tile, tile.col, tile.row + dy)
 
-    if focusTile.hasPosition()
-      @clear(focusTile.col, focusTile.row, sizex, sizey)
-    @set(focusTile, col, row, sizex, sizey)
-    focusTile.moveTo(col, row)
+    focusTile.setPosition(@, col, row)
 
     null
 
-  collapseAboveEmptySpace: (focusTile, minRow = 0) ->
-    return null if focusTile.hasPosition() is false
+  # Moves a tile upwards until it encounters another tile or the grid's edge.
+  # @param focusTile [Tile] the tile to move
+  # @param targetRow [whole number] the destination row
+  # @return [null]
+  collapseAboveEmptySpace: (focusTile, targetRow = 0) ->
+    if targetRow < 0
+      throw new RangeError('targetRow cannot be less than 0.')
 
-    newRow = minRow
-    aboveTiles = @get(focusTile.col, minRow, focusTile.sizex, focusTile.row - minRow)
+    if focusTile.isInGrid() is false or targetRow >= focusTile.row
+      return null
 
+    # Tiles are in row order (smaller rows first).
+    aboveTiles = @get(focusTile.col, targetRow, focusTile.sizex, focusTile.row - targetRow)
+
+    newRow = targetRow
     for tile in aboveTiles by -1
       neighborRow = tile.row + tile.sizey
       if neighborRow > newRow
         newRow = neighborRow
 
     if newRow isnt focusTile.row
-      @clear(focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey)
-      @set(focusTile, focusTile.col, newRow, focusTile.sizex, focusTile.sizey)
-      focusTile.moveTo(focusTile.col, newRow)
+      col = focusTile.col
+      focusTile.releasePosition()
+      focusTile.setPosition(@, col, newRow)
 
     null
-
-

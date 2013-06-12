@@ -1,15 +1,21 @@
 class Tile
 
-  id = 0
-
-  constructor: (@grid, @sizex = 1, @sizey = 1) ->
-    @id = id++
-
+  constructor: (@sizex = 1, @sizey = 1) ->
     @col = null
     @row = null
 
-  hasPosition: ->
-    @col isnt null and @row isnt null
+  setPosition: (@grid, @col, @row) ->
+    grid.set(@, col, row, @sizex, @sizey)
 
-  moveTo: (@col, @row) ->
-    #console.log(@id)
+    null
+
+  releasePosition: ->
+    if @isInGrid()
+      @grid.clear(@col, @row, @sizex, @sizey)
+      @col = null
+      @row = null
+
+    null
+
+  isInGrid: ->
+    @grid? and @col? and @row?

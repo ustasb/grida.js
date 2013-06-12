@@ -24,7 +24,7 @@ module.exports = (grunt) ->
         files: ['src/**/*.coffee']
         tasks: ['coffee:join', 'coffee:bare']
       spec:
-        files: ['test/spec/**/*_spec.coffee']
+        files: ['test/spec/**/*.coffee']
         tasks: ['coffee:spec']
 
     coffee:
@@ -40,7 +40,8 @@ module.exports = (grunt) ->
           '<%= dist.test %>': buildOrder
       spec:
         files:
-          'test/specs_combined.js': 'test/spec/**/*_spec.coffee'
+          'test/specs_combined.js': ['test/spec/spec_helper.coffee',
+                                     'test/spec/**/*.coffee']
 
     uglify:
       min:
