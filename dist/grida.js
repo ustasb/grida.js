@@ -52,7 +52,7 @@
         if (grid[tempRow]) {
           for (x = _j = 0; _j < sizex; x = _j += 1) {
             item = grid[tempRow][col + x];
-            if (item && inArray(item, items) === -1) {
+            if ((item != null) && inArray(item, items) === -1) {
               items.push(item);
             }
           }

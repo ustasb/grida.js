@@ -41,7 +41,7 @@ class Grid
       if grid[tempRow]
         for x in [0...sizex] by 1
           item = grid[tempRow][col + x]
-          items.push(item) if item and inArray(item, items) is -1
+          items.push(item) if item? and inArray(item, items) is -1
 
     items
 
