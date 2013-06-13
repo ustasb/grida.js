@@ -219,6 +219,63 @@ TileGrid = (function(_super) {
     return null;
   };
 
+  TileGrid.prototype.swapWithTilesAt = (function() {
+    var canSwap;
+    canSwap = function(grid, focusTile, col, row, testInverse) {
+      var c, index, r, tile, tilesToSwap, _i, _len;
+      if (testInverse == null) {
+        testInverse = true;
+      }
+      tilesToSwap = grid.get(col, row, focusTile.sizex, focusTile.sizey);
+      index = $.inArray(focusTile, tilesToSwap);
+      if (index !== -1) {
+        if (tilesToSwap.length > 1) {
+          return false;
+        } else {
+          tilesToSwap.splice(index, 1);
+        }
+      }
+      for (_i = 0, _len = tilesToSwap.length; _i < _len; _i++) {
+        tile = tilesToSwap[_i];
+        if (tile.col < col || tile.row < row || tile.col + tile.sizex > col + focusTile.sizex || tile.row + tile.sizey > row + focusTile.sizey) {
+          if (testInverse === false) {
+            return false;
+          } else {
+            c = focusTile.col - (col - tile.col);
+            r = focusTile.row - (row - tile.row);
+            if (c < 0 || r < 0 || canSwap(grid, tile, c, r, false) === false) {
+              return false;
+            }
+          }
+        }
+      }
+      return tilesToSwap;
+    };
+    return function(focusTile, col, row) {
+      var fc, fr, tc, tile, tilesToSwap, tr, _i, _len;
+      if (focusTile.col === col && focusTile.row === row) {
+        return false;
+      }
+      tilesToSwap = canSwap(this, focusTile, col, row);
+      if (tilesToSwap === false) {
+        return false;
+      } else {
+        fc = focusTile.col;
+        fr = focusTile.row;
+        focusTile.releasePosition();
+        for (_i = 0, _len = tilesToSwap.length; _i < _len; _i++) {
+          tile = tilesToSwap[_i];
+          tc = tile.col;
+          tr = tile.row;
+          tile.releasePosition();
+          tile.setPosition(this, fc - (col - tc), fr - (row - tr));
+        }
+        focusTile.setPosition(this, col, row);
+        return true;
+      }
+    };
+  })();
+
   return TileGrid;
 
 })(Grid);

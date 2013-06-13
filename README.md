@@ -1,3 +1,4 @@
+
 To build, first install Grunt dependencies:
 
   npm install
@@ -12,3 +13,19 @@ Features:
       - scale inside elements
       - reflow inside elements
   - Preserve whitespace if desired
+
+attemptInsertionAt:
+
+  if
+  canSwapWithTilesAt
+
+
+$('#container').grida({
+  margins: [],
+  base_dimensions: [],
+  trade_type: 'neighbor_vertical'
+});
+_
+
+
+

@@ -76,6 +76,7 @@ class TileGrid extends Grid
 
     # Tiles are in row order (smaller rows first).
     obstructingTiles = @get(col, row, focusTile.sizex, focusTile.sizey)
+
     for tile in obstructingTiles by -1
       @clear(tile.col, tile.row, tile.sizex, tile.sizey)
       dy = (row + focusTile.sizey) - tile.row
@@ -111,3 +112,56 @@ class TileGrid extends Grid
       focusTile.setPosition(@, col, newRow)
 
     null
+
+  swapWithTilesAt: do ->
+
+    canSwap = (grid, focusTile, col, row, testInverse = true) ->
+      tilesToSwap = grid.get(col, row, focusTile.sizex, focusTile.sizey)
+
+      index = $.inArray(focusTile, tilesToSwap)
+      if index isnt -1
+        if tilesToSwap.length > 1
+          # The focus tile is in the way.
+          return false
+        else
+          tilesToSwap.splice(index, 1)
+
+      for tile in tilesToSwap
+        if tile.col < col or tile.row < row or
+           tile.col + tile.sizex > col + focusTile.sizex or
+           tile.row + tile.sizey > row + focusTile.sizey
+
+          if testInverse is false
+            return false
+          else
+            c = focusTile.col - (col - tile.col)
+            r = focusTile.row - (row - tile.row)
+            if c < 0 or r < 0 or canSwap(grid, tile, c, r, false) is false
+              return false
+
+      tilesToSwap
+
+    (focusTile, col, row) ->
+
+      if focusTile.col is col and focusTile.row is row
+        return false
+
+      tilesToSwap = canSwap(@, focusTile, col, row)
+
+      if tilesToSwap is false
+        return false
+      else
+        fc = focusTile.col
+        fr = focusTile.row
+        focusTile.releasePosition()
+
+        for tile in tilesToSwap
+          tc = tile.col
+          tr = tile.row
+          tile.releasePosition()
+          tile.setPosition(@, fc - (col - tc), fr - (row - tr))
+
+        focusTile.setPosition(@, col, row)
+
+        true
+
