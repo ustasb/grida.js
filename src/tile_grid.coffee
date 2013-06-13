@@ -113,36 +113,46 @@ class TileGrid extends Grid
 
     null
 
+  # Tries to swap a tile's position with obstructing tiles at a given position.
+  # @param focusTile [Tile] the tile to move
+  # @param col, row [whole number] target position
+  # @return [boolean] true if a swap occurred
   swapWithTilesAt: do ->
 
+    # Tests if the tile can swap positions with the obstructing tiles.
+    # It returns the obstructing tiles if a swap is possible.
+    # @param grid [Grid]
+    # @param focusTile [Tile]
+    # @param col, row [whole number]
+    # @param testInverse [boolean] Test if the obstructing tiles can swap with
+    #                              the focus tile.
+    # @return [Array or false]
     canSwap = (grid, focusTile, col, row, testInverse = true) ->
-      tilesToSwap = grid.get(col, row, focusTile.sizex, focusTile.sizey)
+      obstructingTiles = grid.get(col, row, focusTile.sizex, focusTile.sizey)
 
-      index = $.inArray(focusTile, tilesToSwap)
+      index = $.inArray(focusTile, obstructingTiles)
       if index isnt -1
-        if tilesToSwap.length > 1
-          # The focus tile is in the way.
-          return false
+        if obstructingTiles.length > 1
+          return false  # The focus tile is in the way.
         else
-          tilesToSwap.splice(index, 1)
+          obstructingTiles.splice(index, 1)
 
-      for tile in tilesToSwap
+      for tile in obstructingTiles
         if tile.col < col or tile.row < row or
            tile.col + tile.sizex > col + focusTile.sizex or
            tile.row + tile.sizey > row + focusTile.sizey
 
-          if testInverse is false
-            return false
-          else
-            c = focusTile.col - (col - tile.col)
-            r = focusTile.row - (row - tile.row)
-            if c < 0 or r < 0 or canSwap(grid, tile, c, r, false) is false
-              return false
+          return false if testInverse is false
 
-      tilesToSwap
+          newCol = focusTile.col - (col - tile.col)
+          newRow = focusTile.row - (row - tile.row)
+
+          return false if newCol < 0 or newRow < 0 or
+                          canSwap(grid, tile, newCol, newRow, false) is false
+
+      obstructingTiles
 
     (focusTile, col, row) ->
-
       if focusTile.col is col and focusTile.row is row
         return false
 
@@ -151,17 +161,16 @@ class TileGrid extends Grid
       if tilesToSwap is false
         return false
       else
-        fc = focusTile.col
-        fr = focusTile.row
+        fCol = focusTile.col
+        fRow = focusTile.row
         focusTile.releasePosition()
 
         for tile in tilesToSwap
-          tc = tile.col
-          tr = tile.row
+          newCol = fCol - (col - tile.col)
+          newRow = fRow - (row - tile.row)
           tile.releasePosition()
-          tile.setPosition(@, fc - (col - tc), fr - (row - tr))
+          tile.setPosition(@, newCol, newRow)
 
         focusTile.setPosition(@, col, row)
 
         true
-

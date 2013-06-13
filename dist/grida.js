@@ -213,37 +213,36 @@
     TileGrid.prototype.swapWithTilesAt = (function() {
       var canSwap;
       canSwap = function(grid, focusTile, col, row, testInverse) {
-        var c, index, r, tile, tilesToSwap, _i, _len;
+        var index, newCol, newRow, obstructingTiles, tile, _i, _len;
         if (testInverse == null) {
           testInverse = true;
         }
-        tilesToSwap = grid.get(col, row, focusTile.sizex, focusTile.sizey);
-        index = $.inArray(focusTile, tilesToSwap);
+        obstructingTiles = grid.get(col, row, focusTile.sizex, focusTile.sizey);
+        index = $.inArray(focusTile, obstructingTiles);
         if (index !== -1) {
-          if (tilesToSwap.length > 1) {
+          if (obstructingTiles.length > 1) {
             return false;
           } else {
-            tilesToSwap.splice(index, 1);
+            obstructingTiles.splice(index, 1);
           }
         }
-        for (_i = 0, _len = tilesToSwap.length; _i < _len; _i++) {
-          tile = tilesToSwap[_i];
+        for (_i = 0, _len = obstructingTiles.length; _i < _len; _i++) {
+          tile = obstructingTiles[_i];
           if (tile.col < col || tile.row < row || tile.col + tile.sizex > col + focusTile.sizex || tile.row + tile.sizey > row + focusTile.sizey) {
             if (testInverse === false) {
               return false;
-            } else {
-              c = focusTile.col - (col - tile.col);
-              r = focusTile.row - (row - tile.row);
-              if (c < 0 || r < 0 || canSwap(grid, tile, c, r, false) === false) {
-                return false;
-              }
+            }
+            newCol = focusTile.col - (col - tile.col);
+            newRow = focusTile.row - (row - tile.row);
+            if (newCol < 0 || newRow < 0 || canSwap(grid, tile, newCol, newRow, false) === false) {
+              return false;
             }
           }
         }
-        return tilesToSwap;
+        return obstructingTiles;
       };
       return function(focusTile, col, row) {
-        var fc, fr, tc, tile, tilesToSwap, tr, _i, _len;
+        var fCol, fRow, newCol, newRow, tile, tilesToSwap, _i, _len;
         if (focusTile.col === col && focusTile.row === row) {
           return false;
         }
@@ -251,15 +250,15 @@
         if (tilesToSwap === false) {
           return false;
         } else {
-          fc = focusTile.col;
-          fr = focusTile.row;
+          fCol = focusTile.col;
+          fRow = focusTile.row;
           focusTile.releasePosition();
           for (_i = 0, _len = tilesToSwap.length; _i < _len; _i++) {
             tile = tilesToSwap[_i];
-            tc = tile.col;
-            tr = tile.row;
+            newCol = fCol - (col - tile.col);
+            newRow = fRow - (row - tile.row);
             tile.releasePosition();
-            tile.setPosition(this, fc - (col - tc), fr - (row - tr));
+            tile.setPosition(this, newCol, newRow);
           }
           focusTile.setPosition(this, col, row);
           return true;
