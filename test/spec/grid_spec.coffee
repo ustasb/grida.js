@@ -194,3 +194,112 @@ describe 'A Grid class', ->
         [u, u, u, u, u]
         [u, u, u, u, u]
       ])
+
+    it 'only removes items equal to specificItem if defined', ->
+      grid.set(0, 0, 0, 5, 5)
+      grid.set(1, 1, 4, 3, 1)
+      grid.set(2, 0, 1, 2, 1)
+      grid.set(3, 1, 2, 3, 1)
+      grid.set(4, 0, 2, 1, 3)
+      grid.set(5, 2, 1, 1, 1)
+      grid.set(6, 2, 0, 3, 1)
+      grid.set(7, 1, 3, 1, 1)
+      grid.set(8, 4, 1, 1, 4)
+      grid.set(9, 2, 3, 2, 1)
+      expect(grid.grid).toLookLike([
+        [0, 0, 6, 6, 6]
+        [2, 2, 5, 0, 8]
+        [4, 3, 3, 3, 8]
+        [4, 7, 9, 9, 8]
+        [4, 1, 1, 1, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 0)
+      expect(grid.grid).toLookLike([
+        [u, u, 6, 6, 6]
+        [2, 2, 5, u, 8]
+        [4, 3, 3, 3, 8]
+        [4, 7, 9, 9, 8]
+        [4, 1, 1, 1, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 1)
+      expect(grid.grid).toLookLike([
+        [u, u, 6, 6, 6]
+        [2, 2, 5, u, 8]
+        [4, 3, 3, 3, 8]
+        [4, 7, 9, 9, 8]
+        [4, u, u, u, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 2)
+      expect(grid.grid).toLookLike([
+        [u, u, 6, 6, 6]
+        [u, u, 5, u, 8]
+        [4, 3, 3, 3, 8]
+        [4, 7, 9, 9, 8]
+        [4, u, u, u, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 3)
+      expect(grid.grid).toLookLike([
+        [u, u, 6, 6, 6]
+        [u, u, 5, u, 8]
+        [4, u, u, u, 8]
+        [4, 7, 9, 9, 8]
+        [4, u, u, u, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 4)
+      expect(grid.grid).toLookLike([
+        [u, u, 6, 6, 6]
+        [u, u, 5, u, 8]
+        [u, u, u, u, 8]
+        [u, 7, 9, 9, 8]
+        [u, u, u, u, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 5)
+      expect(grid.grid).toLookLike([
+        [u, u, 6, 6, 6]
+        [u, u, u, u, 8]
+        [u, u, u, u, 8]
+        [u, 7, 9, 9, 8]
+        [u, u, u, u, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 6)
+      expect(grid.grid).toLookLike([
+        [u, u, u, u, u]
+        [u, u, u, u, 8]
+        [u, u, u, u, 8]
+        [u, 7, 9, 9, 8]
+        [u, u, u, u, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 7)
+      expect(grid.grid).toLookLike([
+        [u, u, u, u, u]
+        [u, u, u, u, 8]
+        [u, u, u, u, 8]
+        [u, u, 9, 9, 8]
+        [u, u, u, u, 8]
+      ])
+
+      grid.clear(0, 0, 5, 5, 8)
+      expect(grid.grid).toLookLike([
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, 9, 9, u]
+        [u, u, u, u, u]
+      ])
+
+      grid.clear(0, 0, 5, 5, 9)
+      expect(grid.grid).toLookLike([
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+        [u, u, u, u, u]
+      ])

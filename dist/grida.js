@@ -61,7 +61,7 @@
       return items;
     };
 
-    Grid.prototype.clear = function(col, row, sizex, sizey) {
+    Grid.prototype.clear = function(col, row, sizex, sizey, specificItem) {
       var grid, tempRow, x, y, _i, _j;
       if (sizex == null) {
         sizex = 1;
@@ -74,7 +74,9 @@
         tempRow = row + y;
         if (grid[tempRow]) {
           for (x = _j = 0; _j < sizex; x = _j += 1) {
-            delete grid[tempRow][col + x];
+            if (specificItem === void 0 || specificItem === grid[tempRow][col + x]) {
+              delete grid[tempRow][col + x];
+            }
           }
         }
       }

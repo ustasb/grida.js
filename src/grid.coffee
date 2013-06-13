@@ -47,8 +47,9 @@ class Grid
 
   # Removes items in a grid area.
   # @param col, row, sizex, sizey [whole number]
+  # @param specificItem [any] If defined, only items equal to it are moved.
   # @return [null]
-  clear: (col, row, sizex = 1, sizey = 1) ->
+  clear: (col, row, sizex = 1, sizey = 1, specificItem) ->
     grid = @grid
 
     for y in [0...sizey] by 1
@@ -56,6 +57,7 @@ class Grid
 
       if grid[tempRow]
         for x in [0...sizex] by 1
-          delete grid[tempRow][col + x]
+          if specificItem is undefined or specificItem is grid[tempRow][col + x]
+            delete grid[tempRow][col + x]
 
     null
