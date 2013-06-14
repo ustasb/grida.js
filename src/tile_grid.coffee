@@ -14,11 +14,6 @@ class TileGrid extends Grid
   constructor: (tilex, tiley, marginx, marginy) ->
     super()
 
-    @tilex = -> tilex
-    @tiley = -> tiley
-    @marginx = -> marginx
-    @marginy = -> marginy
-
     # Converts a column unit to a CSS left position.
     @colToLeft = (col) ->
       marginx + col * (tilex + marginx)
@@ -39,33 +34,33 @@ class TileGrid extends Grid
     @sizeToWidth = (size) ->
       if size <= 0
         return 0 if size is 0
-        throw 'A size cannot be negative.'
-      else
-        size * (tilex + marginx) - marginx
+        throw new RangeError('A size cannot be negative.')
+
+      size * (tilex + marginx) - marginx
 
     # Converts a pixel width to a grid sizex.
     @widthToSize = (width) ->
       if width <= 0
         return 0 if width is 0
-        throw 'A width cannot be negative.'
-      else
-        (width + marginx) / (tilex + marginx)
+        throw new RangeError('A width cannot be negative.')
+
+      (width + marginx) / (tilex + marginx)
 
     # Converts a grid sizey to a pixel height.
     @sizeToHeight = (size) ->
       if size <= 0
         return 0 if size is 0
-        throw 'A size cannot be negative.'
-      else
-        size * (tiley + marginy) - marginy
+        throw new RangeError('A size cannot be negative.')
+
+      size * (tiley + marginy) - marginy
 
     # Converts a pixel height to a grid sizey.
     @heightToSize = (height) ->
       if height <= 0
         return 0 if height is 0
-        throw 'A height cannot be negative.'
-      else
-        (height + marginy) / (tiley + marginy)
+        throw new RangeError('A height cannot be negative.')
+
+      (height + marginy) / (tiley + marginy)
 
   # Inserts a tile at a position and shifts down any obstructing tiles.
   # @param focusTile [Tile] the tile to move
@@ -78,7 +73,6 @@ class TileGrid extends Grid
     obstructingTiles = @get(col, row, focusTile.sizex, focusTile.sizey)
 
     for tile in obstructingTiles by -1
-      @clear(tile.col, tile.row, tile.sizex, tile.sizey)
       dy = (row + focusTile.sizey) - tile.row
       @insertAt(tile, tile.col, tile.row + dy)
 
@@ -103,13 +97,10 @@ class TileGrid extends Grid
     newRow = targetRow
     for tile in aboveTiles by -1
       neighborRow = tile.row + tile.sizey
-      if neighborRow > newRow
-        newRow = neighborRow
+      newRow = neighborRow if neighborRow > newRow
 
     if newRow isnt focusTile.row
-      col = focusTile.col
-      focusTile.releasePosition()
-      focusTile.setPosition(@, col, newRow)
+      focusTile.setPosition(@, focusTile.col, newRow)
 
     null
 
@@ -134,8 +125,7 @@ class TileGrid extends Grid
       if index isnt -1
         if obstructingTiles.length > 1
           return false  # The focus tile is in the way.
-        else
-          obstructingTiles.splice(index, 1)
+        obstructingTiles.splice(index, 1)
 
       for tile in obstructingTiles
         if tile.col < col or tile.row < row or
@@ -160,17 +150,12 @@ class TileGrid extends Grid
 
       if tilesToSwap is false
         return false
-      else
-        fCol = focusTile.col
-        fRow = focusTile.row
-        focusTile.releasePosition()
 
-        for tile in tilesToSwap
-          newCol = fCol - (col - tile.col)
-          newRow = fRow - (row - tile.row)
-          tile.releasePosition()
-          tile.setPosition(@, newCol, newRow)
+      for tile in tilesToSwap
+        newCol = focusTile.col - (col - tile.col)
+        newRow = focusTile.row - (row - tile.row)
+        tile.setPosition(@, newCol, newRow)
 
-        focusTile.setPosition(@, col, row)
+      focusTile.setPosition(@, col, row)
 
-        true
+      true
