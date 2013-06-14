@@ -40,19 +40,19 @@
   <body>
     <br />
     <div id="container">
-      <div data-xxx-sizex="1" data-xxx-sizey="1" >1</div>
-      <div data-xxx-sizex="2" data-xxx-sizey="1" >2</div>
-      <div data-xxx-sizex="3" data-xxx-sizey="1" >3</div>
+      <div data-xxx-sizex="1" data-xxx-sizey="1" >0</div>
+      <div data-xxx-sizex="2" data-xxx-sizey="1" >1</div>
+      <div data-xxx-sizex="3" data-xxx-sizey="1" >2</div>
+      <div data-xxx-sizex="1" data-xxx-sizey="1" >3</div>
       <div data-xxx-sizex="1" data-xxx-sizey="1" >4</div>
-      <div data-xxx-sizex="1" data-xxx-sizey="1" >5</div>
-      <div data-xxx-sizex="3" data-xxx-sizey="3" >6</div>
+      <div data-xxx-sizex="3" data-xxx-sizey="3" >5</div>
+      <div data-xxx-sizex="1" data-xxx-sizey="1" >6</div>
       <div data-xxx-sizex="1" data-xxx-sizey="1" >7</div>
-      <div data-xxx-sizex="1" data-xxx-sizey="1" >8</div>
-      <div data-xxx-sizex="1" data-xxx-sizey="2" >9</div>
-      <div data-xxx-sizex="1" data-xxx-sizey="1" >10</div>
-      <div data-xxx-sizex="2" data-xxx-sizey="4" >11</div>
-      <div data-xxx-sizex="2" data-xxx-sizey="2" >12</div>
-      <div data-xxx-sizex="1" data-xxx-sizey="1" >13</div>
+      <div data-xxx-sizex="1" data-xxx-sizey="2" >8</div>
+      <div data-xxx-sizex="1" data-xxx-sizey="1" >9</div>
+      <div data-xxx-sizex="2" data-xxx-sizey="4" >10</div>
+      <div data-xxx-sizex="2" data-xxx-sizey="2" >11</div>
+      <div data-xxx-sizex="1" data-xxx-sizey="1" >12</div>
     </div>
 
     <script src="../vendor/jquery-1.9.1.min.js"></script>
@@ -60,17 +60,8 @@
 
     <script>
       $('#container').grida({
-        margin: {
-          x: 10,
-          y: 10
-        },
-        grid: {
-          x: 100,
-          y: 100
-        },
-        resizable: true,
-        scaleWithContainer: true,
-        center: true
+        base_dimensions: [100, 100],
+        margins: [10, 10]
       });
     </script>
   </body>

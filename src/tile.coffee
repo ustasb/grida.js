@@ -31,3 +31,34 @@ class Tile
 
   isInGrid: ->
     @grid? and @col? and @row?
+
+class HTMLTile extends Tile
+
+  count = 0
+  changedTiles = {}
+
+  @updateChangedTiles: ->
+    for _, tile of changedTiles
+      tile.updatePos()
+      tile.updateSize()
+    changedTiles = {}
+
+  constructor: (@el, sizex, sizey) ->
+    super(sizex, sizey)
+    @el.style.position = 'absolute'
+    @id = count++
+
+  setPosition: (grid, col, row) ->
+    super
+    changedTiles[@id] = @
+    null
+
+  updateSize: ->
+    @el.style.width = @grid.sizeToWidth(@sizex) + 'px'
+    @el.style.height = @grid.sizeToHeight(@sizey) + 'px'
+    null
+
+  updatePos: ->
+    @el.style.left = @grid.colToLeft(@col) + 'px'
+    @el.style.top = @grid.rowToTop(@row) + 'px'
+    null

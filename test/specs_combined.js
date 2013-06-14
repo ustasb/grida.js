@@ -166,32 +166,14 @@
 }).call(this);
 
 (function() {
-  describe('A TileGrid class', function() {
-    var grid, t1x1, t1x2, t1x3, t2x1, t2x2, t2x3, t3x1, t3x2, t3x3, u;
-    u = void 0;
+  describe('An HTMLTileGrid class', function() {
+    var $container, grid;
     grid = null;
-    t1x1 = null;
-    t1x2 = null;
-    t1x3 = null;
-    t2x1 = null;
-    t2x2 = null;
-    t2x3 = null;
-    t3x1 = null;
-    t3x2 = null;
-    t3x3 = null;
+    $container = $(document.createElement('div'));
     beforeEach(function() {
-      grid = new TileGrid(10, 20, 5, 15);
-      t1x1 = new Tile(1, 1);
-      t1x2 = new Tile(1, 2);
-      t1x3 = new Tile(1, 3);
-      t2x1 = new Tile(2, 1);
-      t2x2 = new Tile(2, 2);
-      t2x3 = new Tile(2, 3);
-      t3x1 = new Tile(3, 1);
-      t3x2 = new Tile(3, 2);
-      return t3x3 = new Tile(3, 3);
+      return grid = new HTMLTileGrid($container, 10, 20, 5, 15);
     });
-    describe('conversion utilities', function() {
+    return describe('conversion utilities', function() {
       describe('#colToLeft', function() {
         return it('converts a column unit to a CSS left position', function() {
           expect(grid.colToLeft(-3)).toEqual(-40);
@@ -281,6 +263,36 @@
         });
       });
     });
+  });
+
+}).call(this);
+
+(function() {
+  describe('A TileGrid class', function() {
+    var grid, t1x1, t1x2, t1x3, t2x1, t2x2, t2x3, t3x1, t3x2, t3x3, u;
+    u = void 0;
+    grid = null;
+    t1x1 = null;
+    t1x2 = null;
+    t1x3 = null;
+    t2x1 = null;
+    t2x2 = null;
+    t2x3 = null;
+    t3x1 = null;
+    t3x2 = null;
+    t3x3 = null;
+    beforeEach(function() {
+      grid = new TileGrid(10, 20, 5, 15);
+      t1x1 = new Tile(1, 1);
+      t1x2 = new Tile(1, 2);
+      t1x3 = new Tile(1, 3);
+      t2x1 = new Tile(2, 1);
+      t2x2 = new Tile(2, 2);
+      t2x3 = new Tile(2, 3);
+      t3x1 = new Tile(3, 1);
+      t3x2 = new Tile(3, 2);
+      return t3x3 = new Tile(3, 3);
+    });
     describe('#collapseAboveEmptySpace', function() {
       it('target row cannot be less than 0', function() {
         grid.insertAt(t1x1, 0, 1);
@@ -362,7 +374,7 @@
         });
       });
     });
-    return describe('#swapWithTilesAt', function() {
+    describe('#swapWithTilesAt', function() {
       return it('swaps a tile with the tiles at a given location if possible', function() {
         grid.insertAt(t1x1, 0, 0);
         grid.insertAt(t1x2, 1, 0);
@@ -404,7 +416,22 @@
         expect(grid.grid).toLookLike([[t3x3, t3x3, t3x3, u, u], [t3x3, t3x3, t3x3, u, u], [t3x3, t3x3, t3x3, u, u], [t1x2, t2x2, t2x2, u, u], [t1x2, t2x2, t2x2, u, t1x1]]);
         grid.insertAt(t1x1, 2, 5);
         expect(grid.swapWithTilesAt(t3x3, 1, 3)).toBe(true);
-        return expect(grid.grid).toLookLike([[t2x2, t2x2, u, u], [t2x2, t2x2, u, u], [u, t1x1, u, u], [t1x2, t3x3, t3x3, t3x3], [t1x2, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3]]);
+        expect(grid.grid).toLookLike([[t2x2, t2x2, u, u], [t2x2, t2x2, u, u], [u, t1x1, u, u], [t1x2, t3x3, t3x3, t3x3], [t1x2, t3x3, t3x3, t3x3], [u, t3x3, t3x3, t3x3]]);
+        return expect(grid.swapWithTilesAt(t1x2, 0, 1)).toBe(false);
+      });
+    });
+    return describe('#attemptInsertAt', function() {
+      return it('checks if a tile can be inserted into a new position', function() {
+        grid.insertAt(t1x1, 0, 2);
+        grid.insertAt(t1x2, 0, 0);
+        grid.insertAt(t1x3, 3, 0);
+        grid.insertAt(t2x1, 1, 0);
+        grid.insertAt(t2x2, 0, 3);
+        grid.insertAt(t2x3, 3, 3);
+        grid.insertAt(t3x1, 0, 5);
+        grid.insertAt(t3x2, 1, 6);
+        grid.insertAt(t3x3, 3, 8);
+        return expect(grid.grid).toLookLike([[t1x2, t2x1, t2x1, t1x3, u, u], [t1x2, u, u, t1x3, u, u], [t1x1, u, u, t1x3, u, u], [t2x2, t2x2, u, t2x3, t2x3, u], [t2x2, t2x2, u, t2x3, t2x3, u], [t3x1, t3x1, t3x1, t2x3, t2x3, u], [u, t3x2, t3x2, t3x2, u, u], [u, t3x2, t3x2, t3x2, u, u], [u, u, u, t3x3, t3x3, t3x3], [u, u, u, t3x3, t3x3, t3x3], [u, u, u, t3x3, t3x3, t3x3]]);
       });
     });
   });
