@@ -45,11 +45,30 @@ class HTMLTile extends Tile
 
   constructor: (@el, sizex, sizey) ->
     super(sizex, sizey)
-    @el.style.position = 'absolute'
+
     @id = count++
+
+    el.style.position = 'absolute'
+
+    @makeDraggable()
+
+  makeDraggable: ->
+    $el = $(@el)
+
+    @draggable = new SnapDraggable(@el)
+
+    $el.on 'xxx-draggable-mousedown', (e) =>
+
+    $el.on 'xxx-draggable-mouseup', (e) =>
+
+    $el.on 'xxx-draggable-snap', (e, col, row) =>
+      @grid.insertAt(@, col, row)
+      HTMLTile.updateChangedTiles()
+
 
   setPosition: (grid, col, row) ->
     super
+    @draggable.grid = grid
     changedTiles[@id] = @
     null
 

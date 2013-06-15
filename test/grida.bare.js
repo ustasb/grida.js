@@ -6,7 +6,105 @@ $DOCUMENT = $(document);
 
 
 
+var Draggable, SnapDraggable,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
+Draggable = (function() {
+  Draggable.create = function(el, grid) {
+    if (grid) {
+      return new SnapDraggable(el, grid);
+    } else {
+      return new Draggable(el);
+    }
+  };
+
+  function Draggable(el) {
+    this.el = $(el).get(0);
+    this.setCssAbsolute();
+    this.initEvents();
+  }
+
+  Draggable.prototype.setCssAbsolute = function() {
+    var el, position;
+    el = this.el;
+    position = $(el).position();
+    el.style.position = 'absolute';
+    el.style.left = position.left + 'px';
+    return el.style.top = position.top + 'px';
+  };
+
+  Draggable.prototype.initEvents = function() {
+    var $el, mousemove,
+      _this = this;
+    $el = $(this.el);
+    mousemove = null;
+    $el.mousedown(function(event) {
+      $el.trigger('xxx-draggable-mousedown', [event]);
+      mousemove = _this.getMousemoveCB(event.pageX, event.pageY);
+      $DOCUMENT.mousemove(mousemove);
+      return false;
+    });
+    return $el.mouseup(function(event) {
+      $el.trigger('xxx-draggable-mouseup', [event]);
+      $DOCUMENT.unbind('mousemove', mousemove);
+      return mousemove = null;
+    });
+  };
+
+  Draggable.prototype.getMousemoveCB = function(mousex, mousey) {
+    var el, position, startLeft, startTop;
+    el = this.el;
+    position = $(el).position();
+    startLeft = mousex - position.left;
+    startTop = mousey - position.top;
+    return function(event) {
+      el.style.left = event.pageX - startLeft + 'px';
+      return el.style.top = event.pageY - startTop + 'px';
+    };
+  };
+
+  return Draggable;
+
+})();
+
+SnapDraggable = (function(_super) {
+  __extends(SnapDraggable, _super);
+
+  function SnapDraggable(el, grid) {
+    this.grid = grid;
+    SnapDraggable.__super__.constructor.call(this, el);
+  }
+
+  SnapDraggable.prototype.getMousemoveCB = function(mousex, mousey) {
+    var $el, el, grid, oldColRow, position, round, startLeft, startTop;
+    el = this.el;
+    $el = $(el);
+    grid = this.grid;
+    round = Math.round;
+    position = $el.position();
+    startLeft = mousex - position.left;
+    startTop = mousey - position.top;
+    oldColRow = round(grid.leftToCol(position.left)) + 'x' + round(grid.topToRow(position.top));
+    return function(event) {
+      var col, colRow, left, row, top;
+      left = event.pageX - startLeft;
+      top = event.pageY - startTop;
+      col = round(grid.leftToCol(left));
+      row = round(grid.topToRow(top));
+      colRow = col + 'x' + row;
+      if (oldColRow !== colRow) {
+        $el.trigger('xxx-draggable-snap', [col, row]);
+        oldColRow = colRow;
+      }
+      el.style.left = grid.colToLeft(col) + 'px';
+      return el.style.top = grid.rowToTop(row) + 'px';
+    };
+  };
+
+  return SnapDraggable;
+
+})(Draggable);
 
 
 
@@ -473,12 +571,27 @@ HTMLTile = (function(_super) {
   function HTMLTile(el, sizex, sizey) {
     this.el = el;
     HTMLTile.__super__.constructor.call(this, sizex, sizey);
-    this.el.style.position = 'absolute';
     this.id = count++;
+    el.style.position = 'absolute';
+    this.makeDraggable();
   }
+
+  HTMLTile.prototype.makeDraggable = function() {
+    var $el,
+      _this = this;
+    $el = $(this.el);
+    this.draggable = new SnapDraggable(this.el);
+    $el.on('xxx-draggable-mousedown', function(e) {});
+    $el.on('xxx-draggable-mouseup', function(e) {});
+    return $el.on('xxx-draggable-snap', function(e, col, row) {
+      _this.grid.insertAt(_this, col, row);
+      return HTMLTile.updateChangedTiles();
+    });
+  };
 
   HTMLTile.prototype.setPosition = function(grid, col, row) {
     HTMLTile.__super__.setPosition.apply(this, arguments);
+    this.draggable.grid = grid;
     changedTiles[this.id] = this;
     return null;
   };
