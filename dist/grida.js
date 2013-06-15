@@ -114,6 +114,16 @@
       TileGrid.__super__.constructor.apply(this, arguments);
     }
 
+    TileGrid.prototype.addTile = function(tile, col, row) {
+      this.set(tile, col, row, tile.sizex, tile.sizey);
+      return null;
+    };
+
+    TileGrid.prototype.removeTile = function(tile) {
+      this.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
+      return null;
+    };
+
     TileGrid.prototype.insertAt = function(focusTile, col, row) {
       var dy, obstructingTiles, tile, _i;
       focusTile.releasePosition();
@@ -236,16 +246,68 @@
 
     function HTMLTileGrid($container, tilex, tiley, marginx, marginy) {
       this.$container = $container;
+      this.tilex = tilex;
+      this.tiley = tiley;
+      this.marginx = marginx;
+      this.marginy = marginy;
       HTMLTileGrid.__super__.constructor.apply(this, arguments);
       this.initConversionUtils(tilex, tiley, marginx, marginy);
+      this.tiles = [];
+      this.maxCol = this.getMaxCol();
+      this.centeringOffset = this.getCenteringOffset();
+      this.initEvents();
     }
+
+    HTMLTileGrid.prototype.initEvents = function() {
+      var update,
+        _this = this;
+      update = function() {
+        var tile, _i, _len, _ref;
+        _this.grid = [];
+        _ref = _this.tiles.slice(0);
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          tile = _ref[_i];
+          _this.appendAtFreeSpace(tile);
+        }
+        HTMLTile.updateChangedTiles();
+        return null;
+      };
+      return $WINDOW.resize(function() {
+        _this.maxCol = _this.getMaxCol();
+        _this.centeringOffset = _this.getCenteringOffset(_this.maxCol);
+        return update();
+      });
+    };
+
+    HTMLTileGrid.prototype.getMaxCol = function() {
+      var maxCol, width;
+      width = this.$container.width() - (2 * this.marginx);
+      if (width < this.tilex) {
+        return 0;
+      }
+      maxCol = Math.floor(this.widthToSize(width)) - 1;
+      return maxCol;
+    };
+
+    HTMLTileGrid.prototype.getCenteringOffset = function(maxCol) {
+      var offset, width;
+      if (maxCol == null) {
+        maxCol = this.getMaxCol();
+      }
+      width = this.sizeToWidth(maxCol + 1) + (2 * this.marginx);
+      offset = (this.$container.width() - width) / 2;
+      if (offset < 0) {
+        return 0;
+      }
+      return offset;
+    };
 
     HTMLTileGrid.prototype.initConversionUtils = function(tilex, tiley, marginx, marginy) {
       this.colToLeft = function(col) {
-        return marginx + col * (tilex + marginx);
+        return this.centeringOffset + marginx + col * (tilex + marginx);
       };
       this.leftToCol = function(left) {
-        return (left - marginx) / (tilex + marginx);
+        return (left - marginx - this.centeringOffset) / (tilex + marginx);
       };
       this.rowToTop = function(row) {
         return marginy + row * (tiley + marginy);
@@ -291,6 +353,22 @@
       };
     };
 
+    HTMLTileGrid.prototype.addTile = function(focusTile, col, row) {
+      HTMLTileGrid.__super__.addTile.apply(this, arguments);
+      this.tiles.push(focusTile);
+      return null;
+    };
+
+    HTMLTileGrid.prototype.removeTile = function(focusTile) {
+      var index;
+      HTMLTileGrid.__super__.removeTile.apply(this, arguments);
+      index = $.inArray(focusTile, this.tiles);
+      if (index !== -1) {
+        this.tiles.splice(index, 1);
+      }
+      return null;
+    };
+
     HTMLTileGrid.prototype.appendAtFreeSpace = function(focusTile, col, row) {
       var memberMaxCol, sizex, sizey, spaceIsFree;
       if (col == null) {
@@ -305,15 +383,16 @@
       memberMaxCol = col + (sizex - 1);
       if (memberMaxCol > this.maxCol) {
         if (sizex > (this.maxCol + 1) && spaceIsFree) {
-          return this.insertAt(focusTile, col, row);
+          this.insertAt(focusTile, col, row);
         } else {
-          return this.appendAtFreeSpace(focusTile, 0, row + 1);
+          this.appendAtFreeSpace(focusTile, 0, row + 1);
         }
       } else if (spaceIsFree) {
-        return this.insertAt(focusTile, col, row);
+        this.insertAt(focusTile, col, row);
       } else {
-        return this.appendAtFreeSpace(focusTile, col + 1, row);
+        this.appendAtFreeSpace(focusTile, col + 1, row);
       }
+      return null;
     };
 
     return HTMLTileGrid;
@@ -336,7 +415,7 @@
       this.grid = grid;
       this.col = col;
       this.row = row;
-      grid.set(this, col, row, this.sizex, this.sizey);
+      this.grid.addTile(this, col, row);
       return null;
     };
 
@@ -344,7 +423,7 @@
       if (!this.isInGrid()) {
         return null;
       }
-      this.grid.clear(this.col, this.row, this.sizex, this.sizey, this);
+      this.grid.removeTile(this);
       this.grid = null;
       this.col = null;
       this.row = null;

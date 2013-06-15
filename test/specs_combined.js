@@ -173,7 +173,7 @@
     beforeEach(function() {
       return grid = new HTMLTileGrid($container, 10, 20, 5, 15);
     });
-    return describe('conversion utilities', function() {
+    describe('conversion utilities', function() {
       describe('#colToLeft', function() {
         return it('converts a column unit to a CSS left position', function() {
           expect(grid.colToLeft(-3)).toEqual(-40);
@@ -261,6 +261,42 @@
           expect(grid.heightToSize(55)).toEqual(2);
           return expect(grid.heightToSize(90)).toEqual(3);
         });
+      });
+    });
+    describe('#getMaxCol', function() {
+      return it("calculates the container's maximum column", function() {
+        $container.width(0);
+        expect(grid.getMaxCol()).toEqual(0);
+        $container.width(5);
+        expect(grid.getMaxCol()).toEqual(0);
+        $container.width(20);
+        expect(grid.getMaxCol()).toEqual(0);
+        $container.width(35);
+        expect(grid.getMaxCol()).toEqual(1);
+        $container.width(100);
+        expect(grid.getMaxCol()).toEqual(5);
+        $container.width(500);
+        return expect(grid.getMaxCol()).toEqual(32);
+      });
+    });
+    return describe('#getCenteringOffset', function() {
+      return it('calculates left offset required to center the grid', function() {
+        $container.width(0);
+        expect(grid.getCenteringOffset()).toEqual(0);
+        $container.width(5);
+        expect(grid.getCenteringOffset()).toEqual(0);
+        $container.width(20);
+        expect(grid.getCenteringOffset()).toEqual(0);
+        $container.width(22);
+        expect(grid.getCenteringOffset()).toEqual(1);
+        $container.width(30);
+        expect(grid.getCenteringOffset()).toEqual(5);
+        $container.width(35);
+        expect(grid.getCenteringOffset()).toEqual(0);
+        $container.width(100);
+        expect(grid.getCenteringOffset()).toEqual(2.5);
+        $container.width(500);
+        return expect(grid.getCenteringOffset()).toEqual(0);
       });
     });
   });

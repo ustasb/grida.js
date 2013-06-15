@@ -19,6 +19,14 @@ class TileGrid extends Grid
   constructor: ->
     super
 
+  addTile: (tile, col, row) ->
+    @set(tile, col, row, tile.sizex, tile.sizey)
+    null
+
+  removeTile: (tile) ->
+    @clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
+    null
+
   # Inserts a tile at a position and shifts down any obstructing tiles.
   # @param focusTile [Tile] the tile to move
   # @param col, row [whole number]
@@ -139,33 +147,54 @@ class TileGrid extends Grid
 
 class HTMLTileGrid extends TileGrid
 
-  constructor: (@$container, tilex, tiley, marginx, marginy) ->
+  constructor: (@$container, @tilex, @tiley, @marginx, @marginy) ->
     super
 
     @initConversionUtils(tilex, tiley, marginx, marginy)
 
-    #calcMaxCol = =>
-      #width = $container.width() - (2 * marginx)
-      #Math.floor(@widthToSize(width)) - 1
-    #@maxCol = calcMaxCol()
+    @tiles = []
+    @maxCol = @getMaxCol()
+    @centeringOffset = @getCenteringOffset()
 
-    #calcCenteringOffset = =>
-      #($container.width() - @sizeToWidth(@maxCol + 1) - (2 * marginx)) / 2
-    #@centeringOffset = 0
+    @initEvents()
 
-    #$WINDOW.resize =>
-      #@maxCol = calcMaxCol()
-      #@centeringOffset = calcCenteringOffset()
+  initEvents: ->
+    update = =>
+      @grid = []
+
+      for tile in @tiles.slice(0)
+        @appendAtFreeSpace(tile)
+
+      HTMLTile.updateChangedTiles()
+
+      null
+
+    $WINDOW.resize =>
+      @maxCol = @getMaxCol()
+      @centeringOffset = @getCenteringOffset(@maxCol)
+      update()
+
+  getMaxCol: ->
+    width = @$container.width() - (2 * @marginx)
+    return 0 if width < @tilex
+    maxCol = Math.floor(@widthToSize(width)) - 1
+    return maxCol
+
+  getCenteringOffset: (maxCol = @getMaxCol()) ->
+    width = @sizeToWidth(maxCol + 1) + (2 * @marginx)
+    offset = (@$container.width() - width) / 2
+    return 0 if offset < 0
+    return offset
 
   initConversionUtils: (tilex, tiley, marginx, marginy) ->
 
     # Converts a column unit to a CSS left position.
     @colToLeft = (col) ->
-      marginx + col * (tilex + marginx)
+      @centeringOffset + marginx + col * (tilex + marginx)
 
     # Converts a CSS left position to a column unit.
     @leftToCol = (left) ->
-      (left - marginx) / (tilex + marginx)
+      (left - marginx - @centeringOffset) / (tilex + marginx)
 
     # Converts a row unit to a CSS top position.
     @rowToTop = (row) ->
@@ -207,6 +236,26 @@ class HTMLTileGrid extends TileGrid
 
       (height + marginy) / (tiley + marginy)
 
+  addTile: (focusTile, col, row) ->
+    super
+
+    @tiles.push(focusTile)
+    #@tiles.sort (a, b) ->
+      #return -1 if a.row < b.row
+      #return -1 if a.row is b.row and a.col < b.col
+      #return 1
+    #console.log(@tiles.length)
+
+    null
+
+  removeTile: (focusTile) ->
+    super
+
+    index = $.inArray(focusTile, @tiles)
+    @tiles.splice(index, 1) if index isnt -1
+
+    null
+
   appendAtFreeSpace: (focusTile, col = 0, row = 0) ->
     sizex = focusTile.sizex
     sizey = focusTile.sizey
@@ -222,3 +271,5 @@ class HTMLTileGrid extends TileGrid
       @insertAt(focusTile, col, row)
     else
       @appendAtFreeSpace(focusTile, col + 1, row)
+
+    null

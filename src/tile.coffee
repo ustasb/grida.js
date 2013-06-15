@@ -14,14 +14,14 @@ class Tile
     @col = col
     @row = row
 
-    grid.set(@, col, row, @sizex, @sizey)
+    @grid.addTile(@, col, row)
 
     null
 
   releasePosition: ->
     return null if not @isInGrid()
 
-    @grid.clear(@col, @row, @sizex, @sizey, @)
+    @grid.removeTile(@)
 
     @grid = null
     @col = null
