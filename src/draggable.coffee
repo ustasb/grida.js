@@ -78,5 +78,5 @@ class SnapDraggable extends Draggable
         $el.trigger('xxx-draggable-snap', [col, row])
         oldColRow = colRow
 
-      el.style.left = grid.colToLeft(col) + 'px'
-      el.style.top = grid.rowToTop(row) + 'px'
+      el.style.left = left + 'px'
+      el.style.top = top + 'px'

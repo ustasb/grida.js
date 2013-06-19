@@ -97,8 +97,8 @@ SnapDraggable = (function(_super) {
         $el.trigger('xxx-draggable-snap', [col, row]);
         oldColRow = colRow;
       }
-      el.style.left = grid.colToLeft(col) + 'px';
-      return el.style.top = grid.rowToTop(row) + 'px';
+      el.style.left = left + 'px';
+      return el.style.top = top + 'px';
     };
   };
 
@@ -195,33 +195,13 @@ var HTMLTileGrid, TileGrid,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 TileGrid = (function(_super) {
-  var InsertType;
-
   __extends(TileGrid, _super);
-
-  InsertType = {
-    COLLAPSE_UP: 1,
-    SHIFT_DOWN: 1,
-    SHIFT_DOWN: 1
-  };
-
-  TileGrid.POS_TRADE_TYPES = {
-    NONE: 0,
-    NEIGHBOR_HORIZONTAL: 1,
-    NEIGHBOR_VERTICAL: 2,
-    NEIGHBOR_HORIZONTAL_VERTICAL: 3,
-    NEIGHBOR_ALL: 4,
-    HORIZONTAL: 5,
-    VERTICAL: 6,
-    HORIZONTAL_VERTICAL: 7,
-    ALL: 8
-  };
 
   function TileGrid() {
     TileGrid.__super__.constructor.apply(this, arguments);
   }
 
-  TileGrid.prototype.addTile = function(tile, col, row) {
+  TileGrid.prototype.setTile = function(tile, col, row) {
     this.set(tile, col, row, tile.sizex, tile.sizey);
     return null;
   };
@@ -366,23 +346,18 @@ HTMLTileGrid = (function(_super) {
   }
 
   HTMLTileGrid.prototype.initEvents = function() {
-    var update,
-      _this = this;
-    update = function() {
+    var _this = this;
+    return $WINDOW.resize(function() {
       var tile, _i, _len, _ref;
+      _this.maxCol = _this.getMaxCol();
+      _this.centeringOffset = _this.getCenteringOffset(_this.maxCol);
       _this.grid = [];
       _ref = _this.tiles.slice(0);
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         tile = _ref[_i];
         _this.appendAtFreeSpace(tile);
       }
-      HTMLTile.updateChangedTiles();
-      return null;
-    };
-    return $WINDOW.resize(function() {
-      _this.maxCol = _this.getMaxCol();
-      _this.centeringOffset = _this.getCenteringOffset(_this.maxCol);
-      return update();
+      return HTMLTile.updateChangedTiles();
     });
   };
 
@@ -460,9 +435,13 @@ HTMLTileGrid = (function(_super) {
     };
   };
 
-  HTMLTileGrid.prototype.addTile = function(focusTile, col, row) {
-    HTMLTileGrid.__super__.addTile.apply(this, arguments);
-    this.tiles.push(focusTile);
+  HTMLTileGrid.prototype.setTile = function(focusTile, col, row) {
+    var index;
+    HTMLTileGrid.__super__.setTile.apply(this, arguments);
+    index = $.inArray(focusTile, this.tiles);
+    if (index === -1) {
+      this.tiles.push(focusTile);
+    }
     return null;
   };
 
@@ -476,8 +455,21 @@ HTMLTileGrid = (function(_super) {
     return null;
   };
 
+  HTMLTileGrid.prototype.sortTilesByPos = function() {
+    this.tiles.sort(function(a, b) {
+      if (a.row < b.row) {
+        return -1;
+      }
+      if (a.row === b.row && a.col < b.col) {
+        return -1;
+      }
+      return 1;
+    });
+    return null;
+  };
+
   HTMLTileGrid.prototype.appendAtFreeSpace = function(focusTile, col, row) {
-    var memberMaxCol, sizex, sizey, spaceIsFree;
+    var isSpaceEmpty, memberMaxCol, sizex, sizey;
     if (col == null) {
       col = 0;
     }
@@ -486,15 +478,15 @@ HTMLTileGrid = (function(_super) {
     }
     sizex = focusTile.sizex;
     sizey = focusTile.sizey;
-    spaceIsFree = this.get(col, row, sizex, sizey).length === 0;
+    isSpaceEmpty = this.get(col, row, sizex, sizey).length === 0;
     memberMaxCol = col + (sizex - 1);
     if (memberMaxCol > this.maxCol) {
-      if (sizex > (this.maxCol + 1) && spaceIsFree) {
+      if (sizex > (this.maxCol + 1) && isSpaceEmpty) {
         this.insertAt(focusTile, col, row);
       } else {
         this.appendAtFreeSpace(focusTile, 0, row + 1);
       }
-    } else if (spaceIsFree) {
+    } else if (isSpaceEmpty) {
       this.insertAt(focusTile, col, row);
     } else {
       this.appendAtFreeSpace(focusTile, col + 1, row);
@@ -526,12 +518,12 @@ Tile = (function() {
     this.grid = grid;
     this.col = col;
     this.row = row;
-    this.grid.addTile(this, col, row);
+    this.grid.setTile(this, col, row);
     return null;
   };
 
   Tile.prototype.releasePosition = function() {
-    if (!this.isInGrid()) {
+    if (this.isInGrid() === false) {
       return null;
     }
     this.grid.removeTile(this);
@@ -550,49 +542,90 @@ Tile = (function() {
 })();
 
 HTMLTile = (function(_super) {
-  var changedTiles, count;
+  var _changedTiles, _count;
 
   __extends(HTMLTile, _super);
 
-  count = 0;
+  _count = 0;
 
-  changedTiles = {};
+  _changedTiles = {};
 
   HTMLTile.updateChangedTiles = function() {
     var tile, _;
-    for (_ in changedTiles) {
-      tile = changedTiles[_];
+    for (_ in _changedTiles) {
+      tile = _changedTiles[_];
       tile.updatePos();
       tile.updateSize();
     }
-    return changedTiles = {};
+    return _changedTiles = {};
   };
 
-  function HTMLTile(el, sizex, sizey) {
+  function HTMLTile(el, grid, sizex, sizey) {
     this.el = el;
+    this.grid = grid;
     HTMLTile.__super__.constructor.call(this, sizex, sizey);
-    this.id = count++;
+    this.id = _count++;
     el.style.position = 'absolute';
     this.makeDraggable();
   }
 
   HTMLTile.prototype.makeDraggable = function() {
-    var $el,
+    var $el, $ghost,
       _this = this;
     $el = $(this.el);
-    this.draggable = new SnapDraggable(this.el);
-    $el.on('xxx-draggable-mousedown', function(e) {});
-    $el.on('xxx-draggable-mouseup', function(e) {});
-    return $el.on('xxx-draggable-snap', function(e, col, row) {
+    $ghost = $('<div class="xxx-draggable-ghost"></div>');
+    $ghost.css({
+      position: 'absolute',
+      backgroundColor: 'blue',
+      zIndex: -1
+    });
+    this.draggable = new SnapDraggable(this.el, this.grid);
+    $el.on('xxx-draggable-mousedown', function(e) {
+      var position;
+      position = $el.position();
+      return $ghost.css({
+        left: position.left,
+        top: position.top,
+        width: $el.width(),
+        height: $el.height()
+      }).appendTo($el.parent());
+    });
+    $el.on('xxx-draggable-mouseup', function(e) {
+      var position;
+      position = $ghost.position();
+      $el.css({
+        left: position.left,
+        top: position.top
+      });
+      return $ghost.remove();
+    });
+    $el.on('xxx-draggable-snap', function(e, col, row) {
+      var maxCol;
+      if (col < 0) {
+        col = 0;
+      }
+      if (row < 0) {
+        row = 0;
+      }
+      maxCol = _this.grid.maxCol;
+      if ((col + _this.sizex - 1) > maxCol) {
+        col = maxCol - (_this.sizex - 1);
+      }
+      $ghost.css({
+        left: _this.grid.colToLeft(col),
+        top: _this.grid.rowToTop(row)
+      });
       _this.grid.insertAt(_this, col, row);
+      _this.grid.sortTilesByPos();
       return HTMLTile.updateChangedTiles();
     });
+    return null;
   };
 
   HTMLTile.prototype.setPosition = function(grid, col, row) {
     HTMLTile.__super__.setPosition.apply(this, arguments);
+    _changedTiles[this.id] = this;
     this.draggable.grid = grid;
-    changedTiles[this.id] = this;
     return null;
   };
 
@@ -625,7 +658,7 @@ $.fn.grida = function(opts) {
     $child = $(child);
     sizex = $child.data('xxx-sizex');
     sizey = $child.data('xxx-sizey');
-    tile = new HTMLTile(child, sizex, sizey);
+    tile = new HTMLTile(child, grid, sizex, sizey);
     grid.appendAtFreeSpace(tile);
   }
   return HTMLTile.updateChangedTiles();

@@ -12,7 +12,7 @@ $.fn.grida = (opts) ->
     sizex = $child.data('xxx-sizex')
     sizey = $child.data('xxx-sizey')
 
-    tile = new HTMLTile(child, sizex, sizey)
+    tile = new HTMLTile(child, grid, sizex, sizey)
     grid.appendAtFreeSpace(tile)
 
   HTMLTile.updateChangedTiles()

@@ -1,30 +1,32 @@
 class TileGrid extends Grid
 
-  InsertType =
-    COLLAPSE_UP: 1
-    SHIFT_DOWN: 1
-    SHIFT_DOWN: 1
+  #InsertType =
+    #COLLAPSE_UP: 1
+    #SHIFT_DOWN: 1
+    #SHIFT_DOWN: 1
 
-  @POS_TRADE_TYPES:
-    NONE: 0
-    NEIGHBOR_HORIZONTAL: 1
-    NEIGHBOR_VERTICAL: 2
-    NEIGHBOR_HORIZONTAL_VERTICAL: 3
-    NEIGHBOR_ALL: 4
-    HORIZONTAL: 5
-    VERTICAL: 6
-    HORIZONTAL_VERTICAL: 7
-    ALL: 8
+  #@POS_TRADE_TYPES:
+    #NONE: 0
+    #NEIGHBOR_HORIZONTAL: 1
+    #NEIGHBOR_VERTICAL: 2
+    #NEIGHBOR_HORIZONTAL_VERTICAL: 3
+    #NEIGHBOR_ALL: 4
+    #HORIZONTAL: 5
+    #VERTICAL: 6
+    #HORIZONTAL_VERTICAL: 7
+    #ALL: 8
 
   constructor: ->
     super
 
-  addTile: (tile, col, row) ->
+  setTile: (tile, col, row) ->
     @set(tile, col, row, tile.sizex, tile.sizey)
+
     null
 
   removeTile: (tile) ->
     @clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
+
     null
 
   # Inserts a tile at a position and shifts down any obstructing tiles.
@@ -159,20 +161,16 @@ class HTMLTileGrid extends TileGrid
     @initEvents()
 
   initEvents: ->
-    update = =>
+    $WINDOW.resize =>
+      @maxCol = @getMaxCol()
+      @centeringOffset = @getCenteringOffset(@maxCol)
+
       @grid = []
 
       for tile in @tiles.slice(0)
         @appendAtFreeSpace(tile)
 
       HTMLTile.updateChangedTiles()
-
-      null
-
-    $WINDOW.resize =>
-      @maxCol = @getMaxCol()
-      @centeringOffset = @getCenteringOffset(@maxCol)
-      update()
 
   getMaxCol: ->
     width = @$container.width() - (2 * @marginx)
@@ -236,15 +234,11 @@ class HTMLTileGrid extends TileGrid
 
       (height + marginy) / (tiley + marginy)
 
-  addTile: (focusTile, col, row) ->
+  setTile: (focusTile, col, row) ->
     super
 
-    @tiles.push(focusTile)
-    #@tiles.sort (a, b) ->
-      #return -1 if a.row < b.row
-      #return -1 if a.row is b.row and a.col < b.col
-      #return 1
-    #console.log(@tiles.length)
+    index = $.inArray(focusTile, @tiles)
+    @tiles.push(focusTile) if index is -1
 
     null
 
@@ -256,18 +250,26 @@ class HTMLTileGrid extends TileGrid
 
     null
 
+  sortTilesByPos: ->
+    @tiles.sort (a, b) ->
+      return -1 if a.row < b.row
+      return -1 if a.row is b.row and a.col < b.col
+      return 1
+
+    null
+
   appendAtFreeSpace: (focusTile, col = 0, row = 0) ->
     sizex = focusTile.sizex
     sizey = focusTile.sizey
-    spaceIsFree = @get(col, row, sizex, sizey).length is 0
+    isSpaceEmpty = @get(col, row, sizex, sizey).length is 0
     memberMaxCol = col + (sizex - 1)
 
     if memberMaxCol > @maxCol
-      if sizex > (@maxCol + 1) and spaceIsFree
+      if sizex > (@maxCol + 1) and isSpaceEmpty
         @insertAt(focusTile, col, row)
       else
         @appendAtFreeSpace(focusTile, 0, row + 1)
-    else if spaceIsFree
+    else if isSpaceEmpty
       @insertAt(focusTile, col, row)
     else
       @appendAtFreeSpace(focusTile, col + 1, row)
