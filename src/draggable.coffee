@@ -22,17 +22,26 @@ class Draggable
 
   initEvents: ->
     $el = $(@el)
+    oldzIndex = null
     mousemove = null
 
     $el.mousedown (event) =>
+      oldzIndex = $el.css('z-index')
+      $el.css('z-index', 99999)
+
       $el.trigger('xxx-draggable-mousedown', [event])
+
       mousemove = @getMousemoveCB(event.pageX, event.pageY)
       $DOCUMENT.mousemove(mousemove)
 
       false  # Prevent selection highlighting
 
-    $el.mouseup (event) =>
+    $WINDOW.mouseup (event) =>
+      return null if not mousemove
+
+      $el.css('z-index', oldzIndex)
       $el.trigger('xxx-draggable-mouseup', [event])
+
       $DOCUMENT.unbind('mousemove', mousemove)
       mousemove = null
 

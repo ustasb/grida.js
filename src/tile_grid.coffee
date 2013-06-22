@@ -1,32 +1,16 @@
+Array::remove = (e) -> @[t..t] = [] if (t = @indexOf(e)) > -1
+
 class TileGrid extends Grid
-
-  #InsertType =
-    #COLLAPSE_UP: 1
-    #SHIFT_DOWN: 1
-    #SHIFT_DOWN: 1
-
-  #@POS_TRADE_TYPES:
-    #NONE: 0
-    #NEIGHBOR_HORIZONTAL: 1
-    #NEIGHBOR_VERTICAL: 2
-    #NEIGHBOR_HORIZONTAL_VERTICAL: 3
-    #NEIGHBOR_ALL: 4
-    #HORIZONTAL: 5
-    #VERTICAL: 6
-    #HORIZONTAL_VERTICAL: 7
-    #ALL: 8
 
   constructor: ->
     super
 
   setTile: (tile, col, row) ->
     @set(tile, col, row, tile.sizex, tile.sizey)
-
     null
 
   removeTile: (tile) ->
     @clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
-
     null
 
   # Inserts a tile at a position and shifts down any obstructing tiles.
@@ -49,101 +33,95 @@ class TileGrid extends Grid
 
   # Moves a tile upwards until it encounters another tile or the grid's edge.
   # @param focusTile [Tile] the tile to move
-  # @param targetRow [whole number] the destination row
+  # @param recursive [boolean] if true, also move up below neighboring tiles
   # @return [null]
-  collapseAboveEmptySpace: (focusTile, targetRow = 0) ->
-    if targetRow < 0
-      throw new RangeError('targetRow cannot be less than 0.')
-
-    if focusTile.isInGrid() is false or targetRow >= focusTile.row
+  collapseAboveEmptySpace: (focusTile, recursive = false) ->
+    if focusTile.isInGrid() is false or focusTile.row is 0
       return null
 
-    # Tiles are in row order (smaller rows first).
-    aboveTiles = @get(focusTile.col, targetRow, focusTile.sizex, focusTile.row - targetRow)
+    grid = @grid
+    newRow = 0
+    row = focusTile.row
+    i = 0
 
-    newRow = targetRow
-    for tile in aboveTiles by -1
-      neighborRow = tile.row + tile.sizey
-      newRow = neighborRow if neighborRow > newRow
+    while row >= 0
+      mod = i % focusTile.sizex
+      row -= 1 if mod is 0
+
+      if grid[row]?[focusTile.col + mod]?
+        newRow = row + 1
+        break
+
+      i += 1
 
     if newRow isnt focusTile.row
-      focusTile.setPosition(@, focusTile.col, newRow)
+      if recursive is false
+        focusTile.setPosition(@, focusTile.col, newRow)
+      else
+        belowNeighbors = @get(focusTile.col, focusTile.row + focusTile.sizey,
+                              focusTile.sizex, 1)
+
+        focusTile.setPosition(@, focusTile.col, newRow)
+
+        for neighbor in belowNeighbors by 1
+          @collapseAboveEmptySpace(neighbor, true)
 
     null
 
-  # Tries to swap a tile's position with obstructing tiles at a given position.
-  # @param focusTile [Tile] the tile to move
-  # @param col, row [whole number] target position
-  # @return [boolean] true if a swap occurred
-  swapWithTilesAt: do ->
-
-    # Tests if the tile can swap positions with the obstructing tiles.
-    # It returns the obstructing tiles if a swap is possible.
-    # @param grid [Grid]
-    # @param focusTile [Tile]
-    # @param col, row [whole number]
-    # @param testInverse [boolean] Test if the obstructing tiles can swap with
-    #                              the focus tile.
-    # @return [Array or false]
-    canSwap = (grid, focusTile, col, row, testInverse = true) ->
-      obstructingTiles = grid.get(col, row, focusTile.sizex, focusTile.sizey)
-
-      index = $.inArray(focusTile, obstructingTiles)
-      if index isnt -1
-        if obstructingTiles.length > 1
-          return false  # The focus tile is in the way.
-        obstructingTiles.splice(index, 1)
-
-      for tile in obstructingTiles
-        if tile.col < col or tile.row < row or
-           tile.col + tile.sizex > col + focusTile.sizex or
-           tile.row + tile.sizey > row + focusTile.sizey
-
-          return false if testInverse is false
-
-          newCol = focusTile.col - (col - tile.col)
-          newRow = focusTile.row - (row - tile.row)
-
-          return false if newCol < 0 or newRow < 0 or
-                          canSwap(grid, tile, newCol, newRow, false) is false
-
-      obstructingTiles
-
-    (focusTile, col, row) ->
-      if focusTile.col is col and focusTile.row is row
-        return false
-
-      tilesToSwap = canSwap(@, focusTile, col, row)
-
-      if tilesToSwap is false
-        return false
-
-      for tile in tilesToSwap
-        newCol = focusTile.col - (col - tile.col)
-        newRow = focusTile.row - (row - tile.row)
-        tile.setPosition(@, newCol, newRow)
-
-      focusTile.setPosition(@, col, row)
-
-      true
-
-  attemptInsertAt: (focusTile, col, row) ->
-    if col < 0 or row < 0
-      return false
-
-    if row is 0
-      @insertAt(focusTile, col, row)
-      return true
-
-    if @swapWithTilesAt(focusTile, col, row) is true
-      @collapseAboveEmptySpace(focusTile)
-      return true
+  swapIfPossible: (focusTile, col, row, callback = ->) ->
+    dy = focusTile.row - row
+    swapDisp = focusTile.sizey * (if dy < 0 then -1 else 1)
+    swapOccured = false
 
     obstructingTiles = @get(col, row, focusTile.sizex, focusTile.sizey)
-    for tile in obstructingTiles
-      if tile.row is row
+
+    for tile in obstructingTiles by 1
+      continue if tile is focusTile
+
+      if tile.sizey is Math.abs(dy)
+        newRow = tile.row + swapDisp
+
+        otiles = @get(tile.col, newRow, tile.sizex, Math.abs(newRow - tile.row))
+        otiles.remove(focusTile)
+
+        if otiles.length is 0
+          @doAndCollapseBelowNeigbors tile, => tile.setPosition(@, tile.col, newRow)
+          swapOccured = true
+
+    if swapOccured
+      @doAndCollapseBelowNeigbors focusTile, => @insertAt(focusTile, col, row)
+
+    swapOccured
+
+  doAndCollapseBelowNeigbors: (focusTile, callback) ->
+    belowNeighbors = @get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1)
+
+    callback()
+
+    for neighbor in belowNeighbors
+      @collapseAboveEmptySpace(neighbor, true)
+
+  attemptInsertAt: (focusTile, col, row) ->
+    if @swapIfPossible(focusTile, col, row)
+      return true
+
+    aboveTiles = @get(col, row - 1, focusTile.sizex, 1)
+    if aboveTiles.length is 0
+
+      @doAndCollapseBelowNeigbors focusTile, =>
         @insertAt(focusTile, col, row)
-        return true
+        @collapseAboveEmptySpace(focusTile, true)
+      return true
+
+    else if aboveTiles.length is 1 and aboveTiles[0] is focusTile
+      return false
+
+    else
+      for tile in aboveTiles
+        if tile.row + tile.sizey is row
+          @doAndCollapseBelowNeigbors focusTile, =>
+            @insertAt(focusTile, col, row)
+          return true
 
     false
 

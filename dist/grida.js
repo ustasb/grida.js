@@ -32,17 +32,24 @@
     };
 
     Draggable.prototype.initEvents = function() {
-      var $el, mousemove,
+      var $el, mousemove, oldzIndex,
         _this = this;
       $el = $(this.el);
+      oldzIndex = null;
       mousemove = null;
       $el.mousedown(function(event) {
+        oldzIndex = $el.css('z-index');
+        $el.css('z-index', 99999);
         $el.trigger('xxx-draggable-mousedown', [event]);
         mousemove = _this.getMousemoveCB(event.pageX, event.pageY);
         $DOCUMENT.mousemove(mousemove);
         return false;
       });
-      return $el.mouseup(function(event) {
+      return $WINDOW.mouseup(function(event) {
+        if (!mousemove) {
+          return null;
+        }
+        $el.css('z-index', oldzIndex);
         $el.trigger('xxx-draggable-mouseup', [event]);
         $DOCUMENT.unbind('mousemove', mousemove);
         return mousemove = null;
@@ -183,6 +190,13 @@
 
   })();
 
+  Array.prototype.remove = function(e) {
+    var t, _ref;
+    if ((t = this.indexOf(e)) > -1) {
+      return ([].splice.apply(this, [t, t - t + 1].concat(_ref = [])), _ref);
+    }
+  };
+
   TileGrid = (function(_super) {
     __extends(TileGrid, _super);
 
@@ -213,101 +227,115 @@
       return null;
     };
 
-    TileGrid.prototype.collapseAboveEmptySpace = function(focusTile, targetRow) {
-      var aboveTiles, neighborRow, newRow, tile, _i;
-      if (targetRow == null) {
-        targetRow = 0;
+    TileGrid.prototype.collapseAboveEmptySpace = function(focusTile, recursive) {
+      var belowNeighbors, grid, i, mod, neighbor, newRow, row, _i, _len, _ref;
+      if (recursive == null) {
+        recursive = false;
       }
-      if (targetRow < 0) {
-        throw new RangeError('targetRow cannot be less than 0.');
-      }
-      if (focusTile.isInGrid() === false || targetRow >= focusTile.row) {
+      if (focusTile.isInGrid() === false || focusTile.row === 0) {
         return null;
       }
-      aboveTiles = this.get(focusTile.col, targetRow, focusTile.sizex, focusTile.row - targetRow);
-      newRow = targetRow;
-      for (_i = aboveTiles.length - 1; _i >= 0; _i += -1) {
-        tile = aboveTiles[_i];
-        neighborRow = tile.row + tile.sizey;
-        if (neighborRow > newRow) {
-          newRow = neighborRow;
+      grid = this.grid;
+      newRow = 0;
+      row = focusTile.row;
+      i = 0;
+      while (row >= 0) {
+        mod = i % focusTile.sizex;
+        if (mod === 0) {
+          row -= 1;
         }
+        if (((_ref = grid[row]) != null ? _ref[focusTile.col + mod] : void 0) != null) {
+          newRow = row + 1;
+          break;
+        }
+        i += 1;
       }
       if (newRow !== focusTile.row) {
-        focusTile.setPosition(this, focusTile.col, newRow);
+        if (recursive === false) {
+          focusTile.setPosition(this, focusTile.col, newRow);
+        } else {
+          belowNeighbors = this.get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1);
+          focusTile.setPosition(this, focusTile.col, newRow);
+          for (_i = 0, _len = belowNeighbors.length; _i < _len; _i += 1) {
+            neighbor = belowNeighbors[_i];
+            this.collapseAboveEmptySpace(neighbor, true);
+          }
+        }
       }
       return null;
     };
 
-    TileGrid.prototype.swapWithTilesAt = (function() {
-      var canSwap;
-      canSwap = function(grid, focusTile, col, row, testInverse) {
-        var index, newCol, newRow, obstructingTiles, tile, _i, _len;
-        if (testInverse == null) {
-          testInverse = true;
+    TileGrid.prototype.swapIfPossible = function(focusTile, col, row, callback) {
+      var dy, newRow, obstructingTiles, otiles, swapDisp, swapOccured, tile, _i, _len,
+        _this = this;
+      if (callback == null) {
+        callback = function() {};
+      }
+      dy = focusTile.row - row;
+      swapDisp = focusTile.sizey * (dy < 0 ? -1 : 1);
+      swapOccured = false;
+      obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
+      for (_i = 0, _len = obstructingTiles.length; _i < _len; _i += 1) {
+        tile = obstructingTiles[_i];
+        if (tile === focusTile) {
+          continue;
         }
-        obstructingTiles = grid.get(col, row, focusTile.sizex, focusTile.sizey);
-        index = $.inArray(focusTile, obstructingTiles);
-        if (index !== -1) {
-          if (obstructingTiles.length > 1) {
-            return false;
-          }
-          obstructingTiles.splice(index, 1);
-        }
-        for (_i = 0, _len = obstructingTiles.length; _i < _len; _i++) {
-          tile = obstructingTiles[_i];
-          if (tile.col < col || tile.row < row || tile.col + tile.sizex > col + focusTile.sizex || tile.row + tile.sizey > row + focusTile.sizey) {
-            if (testInverse === false) {
-              return false;
-            }
-            newCol = focusTile.col - (col - tile.col);
-            newRow = focusTile.row - (row - tile.row);
-            if (newCol < 0 || newRow < 0 || canSwap(grid, tile, newCol, newRow, false) === false) {
-              return false;
-            }
+        if (tile.sizey === Math.abs(dy)) {
+          newRow = tile.row + swapDisp;
+          otiles = this.get(tile.col, newRow, tile.sizex, Math.abs(newRow - tile.row));
+          otiles.remove(focusTile);
+          if (otiles.length === 0) {
+            this.doAndCollapseBelowNeigbors(tile, function() {
+              return tile.setPosition(_this, tile.col, newRow);
+            });
+            swapOccured = true;
           }
         }
-        return obstructingTiles;
-      };
-      return function(focusTile, col, row) {
-        var newCol, newRow, tile, tilesToSwap, _i, _len;
-        if (focusTile.col === col && focusTile.row === row) {
-          return false;
-        }
-        tilesToSwap = canSwap(this, focusTile, col, row);
-        if (tilesToSwap === false) {
-          return false;
-        }
-        for (_i = 0, _len = tilesToSwap.length; _i < _len; _i++) {
-          tile = tilesToSwap[_i];
-          newCol = focusTile.col - (col - tile.col);
-          newRow = focusTile.row - (row - tile.row);
-          tile.setPosition(this, newCol, newRow);
-        }
-        focusTile.setPosition(this, col, row);
-        return true;
-      };
-    })();
+      }
+      if (swapOccured) {
+        this.doAndCollapseBelowNeigbors(focusTile, function() {
+          return _this.insertAt(focusTile, col, row);
+        });
+      }
+      return swapOccured;
+    };
+
+    TileGrid.prototype.doAndCollapseBelowNeigbors = function(focusTile, callback) {
+      var belowNeighbors, neighbor, _i, _len, _results;
+      belowNeighbors = this.get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1);
+      callback();
+      _results = [];
+      for (_i = 0, _len = belowNeighbors.length; _i < _len; _i++) {
+        neighbor = belowNeighbors[_i];
+        _results.push(this.collapseAboveEmptySpace(neighbor, true));
+      }
+      return _results;
+    };
 
     TileGrid.prototype.attemptInsertAt = function(focusTile, col, row) {
-      var obstructingTiles, tile, _i, _len;
-      if (col < 0 || row < 0) {
+      var aboveTiles, tile, _i, _len,
+        _this = this;
+      if (this.swapIfPossible(focusTile, col, row)) {
+        return true;
+      }
+      aboveTiles = this.get(col, row - 1, focusTile.sizex, 1);
+      if (aboveTiles.length === 0) {
+        this.doAndCollapseBelowNeigbors(focusTile, function() {
+          _this.insertAt(focusTile, col, row);
+          return _this.collapseAboveEmptySpace(focusTile, true);
+        });
+        return true;
+      } else if (aboveTiles.length === 1 && aboveTiles[0] === focusTile) {
         return false;
-      }
-      if (row === 0) {
-        this.insertAt(focusTile, col, row);
-        return true;
-      }
-      if (this.swapWithTilesAt(focusTile, col, row) === true) {
-        this.collapseAboveEmptySpace(focusTile);
-        return true;
-      }
-      obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
-      for (_i = 0, _len = obstructingTiles.length; _i < _len; _i++) {
-        tile = obstructingTiles[_i];
-        if (tile.row === row) {
-          this.insertAt(focusTile, col, row);
-          return true;
+      } else {
+        for (_i = 0, _len = aboveTiles.length; _i < _len; _i++) {
+          tile = aboveTiles[_i];
+          if (tile.row + tile.sizey === row) {
+            this.doAndCollapseBelowNeigbors(focusTile, function() {
+              return _this.insertAt(focusTile, col, row);
+            });
+            return true;
+          }
         }
       }
       return false;
@@ -596,12 +624,14 @@
         if ((col + _this.sizex - 1) > maxCol) {
           col = maxCol - (_this.sizex - 1);
         }
-        $ghost.css({
-          left: _this.grid.colToLeft(col),
-          top: _this.grid.rowToTop(row)
-        });
-        _this.grid.insertAt(_this, col, row);
+        if (_this.grid.attemptInsertAt(_this, col, row) === false) {
+          return null;
+        }
         _this.grid.sortTilesByPos();
+        $ghost.css({
+          left: _this.grid.colToLeft(_this.col),
+          top: _this.grid.rowToTop(_this.row)
+        });
         return HTMLTile.updateChangedTiles();
       });
       return null;

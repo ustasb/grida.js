@@ -93,12 +93,14 @@ class HTMLTile extends Tile
       if (col + @sizex - 1) > maxCol
         col = maxCol - (@sizex - 1)
 
-      $ghost.css
-        left: @grid.colToLeft(col)
-        top: @grid.rowToTop(row)
+      if @grid.attemptInsertAt(@, col, row) is false
+        return null
 
-      @grid.insertAt(@, col, row)
       @grid.sortTilesByPos()
+
+      $ghost.css
+        left: @grid.colToLeft(@col)
+        top: @grid.rowToTop(@row)
 
       HTMLTile.updateChangedTiles()
 
