@@ -190,13 +190,6 @@
 
   })();
 
-  Array.prototype.remove = function(e) {
-    var t, _ref;
-    if ((t = this.indexOf(e)) > -1) {
-      return ([].splice.apply(this, [t, t - t + 1].concat(_ref = [])), _ref);
-    }
-  };
-
   TileGrid = (function(_super) {
     __extends(TileGrid, _super);
 
@@ -221,123 +214,125 @@
       for (_i = obstructingTiles.length - 1; _i >= 0; _i += -1) {
         tile = obstructingTiles[_i];
         dy = (row + focusTile.sizey) - tile.row;
-        this.insertAt(tile, tile.col, tile.row + dy);
+        while (--dy >= 0) {
+          this.insertAt(tile, tile.col, tile.row + 1);
+        }
       }
       focusTile.setPosition(this, col, row);
       return null;
     };
 
-    TileGrid.prototype.collapseAboveEmptySpace = function(focusTile, recursive) {
-      var belowNeighbors, grid, i, mod, neighbor, newRow, row, _i, _len, _ref;
-      if (recursive == null) {
-        recursive = false;
+    TileGrid.prototype.getLowestAboveRow = function(focusTile, newCol, newRow) {
+      var col, lowestRow, sizex;
+      col = newCol || focusTile.col;
+      lowestRow = newRow || focusTile.row;
+      sizex = focusTile.sizex;
+      while (lowestRow > 0 && this.get(col, lowestRow - 1, sizex, 1).length === 0) {
+        lowestRow -= 1;
       }
+      return lowestRow;
+    };
+
+    TileGrid.prototype.collapseAboveEmptySpace = function(focusTile) {
+      var newRow;
       if (focusTile.isInGrid() === false || focusTile.row === 0) {
         return null;
       }
-      grid = this.grid;
-      newRow = 0;
-      row = focusTile.row;
-      i = 0;
-      while (row >= 0) {
-        mod = i % focusTile.sizex;
-        if (mod === 0) {
-          row -= 1;
-        }
-        if (((_ref = grid[row]) != null ? _ref[focusTile.col + mod] : void 0) != null) {
-          newRow = row + 1;
-          break;
-        }
-        i += 1;
-      }
+      newRow = this.getLowestAboveRow(focusTile);
       if (newRow !== focusTile.row) {
-        if (recursive === false) {
-          focusTile.setPosition(this, focusTile.col, newRow);
-        } else {
-          belowNeighbors = this.get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1);
-          focusTile.setPosition(this, focusTile.col, newRow);
-          for (_i = 0, _len = belowNeighbors.length; _i < _len; _i += 1) {
-            neighbor = belowNeighbors[_i];
-            this.collapseAboveEmptySpace(neighbor, true);
-          }
-        }
+        focusTile.setPosition(this, focusTile.col, newRow);
       }
       return null;
     };
 
-    TileGrid.prototype.swapIfPossible = function(focusTile, col, row, callback) {
-      var dy, newRow, obstructingTiles, otiles, swapDisp, swapOccured, tile, _i, _len,
+    TileGrid.prototype.collapseNeighborsAfter = function(focusTile, callback) {
+      var belowNeighbors, neighbor, _i, _len, _results,
         _this = this;
-      if (callback == null) {
-        callback = function() {};
-      }
-      dy = focusTile.row - row;
-      swapDisp = focusTile.sizey * (dy < 0 ? -1 : 1);
-      swapOccured = false;
-      obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
-      for (_i = 0, _len = obstructingTiles.length; _i < _len; _i += 1) {
-        tile = obstructingTiles[_i];
-        if (tile === focusTile) {
-          continue;
-        }
-        if (tile.sizey === Math.abs(dy)) {
-          newRow = tile.row + swapDisp;
-          otiles = this.get(tile.col, newRow, tile.sizex, Math.abs(newRow - tile.row));
-          otiles.remove(focusTile);
-          if (otiles.length === 0) {
-            this.doAndCollapseBelowNeigbors(tile, function() {
-              return tile.setPosition(_this, tile.col, newRow);
-            });
-            swapOccured = true;
-          }
-        }
-      }
-      if (swapOccured) {
-        this.doAndCollapseBelowNeigbors(focusTile, function() {
-          return _this.insertAt(focusTile, col, row);
-        });
-      }
-      return swapOccured;
-    };
-
-    TileGrid.prototype.doAndCollapseBelowNeigbors = function(focusTile, callback) {
-      var belowNeighbors, neighbor, _i, _len, _results;
       belowNeighbors = this.get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1);
-      callback();
+      if (callback != null) {
+        callback();
+      }
       _results = [];
-      for (_i = 0, _len = belowNeighbors.length; _i < _len; _i++) {
+      for (_i = 0, _len = belowNeighbors.length; _i < _len; _i += 1) {
         neighbor = belowNeighbors[_i];
-        _results.push(this.collapseAboveEmptySpace(neighbor, true));
+        _results.push(this.collapseNeighborsAfter(neighbor, function() {
+          return _this.collapseAboveEmptySpace(neighbor);
+        }));
       }
       return _results;
     };
 
-    TileGrid.prototype.attemptInsertAt = function(focusTile, col, row) {
-      var aboveTiles, tile, _i, _len,
+    TileGrid.prototype.swapIfPossible = function(focusTile, col, row) {
+      var dy, newRow, obstructingTiles, swapOccured, tile, _i, _j, _len, _len1,
         _this = this;
-      if (this.swapIfPossible(focusTile, col, row)) {
-        return true;
-      }
-      aboveTiles = this.get(col, row - 1, focusTile.sizex, 1);
-      if (aboveTiles.length === 0) {
-        this.doAndCollapseBelowNeigbors(focusTile, function() {
-          _this.insertAt(focusTile, col, row);
-          return _this.collapseAboveEmptySpace(focusTile, true);
-        });
-        return true;
-      } else if (aboveTiles.length === 1 && aboveTiles[0] === focusTile) {
+      if (row === focusTile.row) {
         return false;
-      } else {
-        for (_i = 0, _len = aboveTiles.length; _i < _len; _i++) {
-          tile = aboveTiles[_i];
-          if (tile.row + tile.sizey === row) {
-            this.doAndCollapseBelowNeigbors(focusTile, function() {
-              return _this.insertAt(focusTile, col, row);
+      }
+      swapOccured = false;
+      this.removeTile(focusTile);
+      obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
+      if (row > focusTile.row) {
+        for (_i = 0, _len = obstructingTiles.length; _i < _len; _i += 1) {
+          tile = obstructingTiles[_i];
+          newRow = this.getLowestAboveRow(tile);
+          if (newRow + tile.sizey === row) {
+            swapOccured = true;
+            this.collapseNeighborsAfter(tile, function() {
+              return _this.insertAt(tile, tile.col, newRow);
             });
-            return true;
+          }
+        }
+      } else {
+        dy = focusTile.row - row;
+        for (_j = 0, _len1 = obstructingTiles.length; _j < _len1; _j += 1) {
+          tile = obstructingTiles[_j];
+          if (tile.sizey === dy) {
+            swapOccured = true;
+            break;
           }
         }
       }
+      if (swapOccured) {
+        this.collapseNeighborsAfter(focusTile, function() {
+          return _this.insertAt(focusTile, col, row);
+        });
+      } else {
+        this.setTile(focusTile, focusTile.col, focusTile.row);
+      }
+      return swapOccured;
+    };
+
+    TileGrid.prototype.attemptInsertAt = function(focusTile, col, row) {
+      var aboveTiles, newRow, tile, _i, _len,
+        _this = this;
+      if (row === 0) {
+        this.collapseNeighborsAfter(focusTile, function() {
+          return _this.insertAt(focusTile, col, row);
+        });
+        return true;
+      }
+      if (this.swapIfPossible(focusTile, col, row)) {
+        return true;
+      }
+      this.removeTile(focusTile);
+      aboveTiles = this.get(col, row - 1, focusTile.sizex, 1);
+      if (aboveTiles.length === 0) {
+        newRow = this.getLowestAboveRow(focusTile, col, row);
+        this.collapseNeighborsAfter(focusTile, function() {
+          return focusTile.setPosition(_this, col, newRow);
+        });
+        return true;
+      }
+      for (_i = 0, _len = aboveTiles.length; _i < _len; _i += 1) {
+        tile = aboveTiles[_i];
+        if (tile.row + tile.sizey === row) {
+          this.collapseNeighborsAfter(focusTile, function() {
+            return _this.insertAt(focusTile, col, row);
+          });
+          return true;
+        }
+      }
+      this.setTile(focusTile, focusTile.col, focusTile.row);
       return false;
     };
 
