@@ -4,8 +4,6 @@ $WINDOW = $(window);
 
 $DOCUMENT = $(document);
 
-
-
 var Draggable, SnapDraggable,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
@@ -197,7 +195,7 @@ Grid = (function() {
 
 })();
 
-var HTMLTileGrid, TileGrid,
+var TileGrid,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -262,20 +260,19 @@ TileGrid = (function(_super) {
   };
 
   TileGrid.prototype.collapseNeighborsAfter = function(focusTile, callback) {
-    var belowNeighbors, neighbor, _i, _len, _results,
+    var belowNeighbors, neighbor, _i, _len,
       _this = this;
     belowNeighbors = this.get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1);
     if (callback != null) {
       callback();
     }
-    _results = [];
     for (_i = 0, _len = belowNeighbors.length; _i < _len; _i += 1) {
       neighbor = belowNeighbors[_i];
-      _results.push(this.collapseNeighborsAfter(neighbor, function() {
+      this.collapseNeighborsAfter(neighbor, function() {
         return _this.collapseAboveEmptySpace(neighbor);
-      }));
+      });
     }
-    return _results;
+    return null;
   };
 
   TileGrid.prototype.swapIfPossible = function(focusTile, col, row) {
@@ -360,16 +357,20 @@ TileGrid = (function(_super) {
 
 })(Grid);
 
-HTMLTileGrid = (function(_super) {
-  __extends(HTMLTileGrid, _super);
+var DOMTileGrid,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-  function HTMLTileGrid($container, tilex, tiley, marginx, marginy) {
+DOMTileGrid = (function(_super) {
+  __extends(DOMTileGrid, _super);
+
+  function DOMTileGrid($container, tilex, tiley, marginx, marginy) {
     this.$container = $container;
     this.tilex = tilex;
     this.tiley = tiley;
     this.marginx = marginx;
     this.marginy = marginy;
-    HTMLTileGrid.__super__.constructor.apply(this, arguments);
+    DOMTileGrid.__super__.constructor.apply(this, arguments);
     this.initConversionUtils(tilex, tiley, marginx, marginy);
     this.tiles = [];
     this.maxCol = this.getMaxCol();
@@ -377,7 +378,7 @@ HTMLTileGrid = (function(_super) {
     this.initEvents();
   }
 
-  HTMLTileGrid.prototype.initEvents = function() {
+  DOMTileGrid.prototype.initEvents = function() {
     var _this = this;
     return $WINDOW.resize(function() {
       var tile, _i, _len, _ref;
@@ -389,11 +390,11 @@ HTMLTileGrid = (function(_super) {
         tile = _ref[_i];
         _this.appendAtFreeSpace(tile);
       }
-      return HTMLTile.updateChangedTiles();
+      return DOMTile.updateChangedTiles();
     });
   };
 
-  HTMLTileGrid.prototype.getMaxCol = function() {
+  DOMTileGrid.prototype.getMaxCol = function() {
     var maxCol, width;
     width = this.$container.width() - (2 * this.marginx);
     if (width < this.tilex) {
@@ -403,7 +404,7 @@ HTMLTileGrid = (function(_super) {
     return maxCol;
   };
 
-  HTMLTileGrid.prototype.getCenteringOffset = function(maxCol) {
+  DOMTileGrid.prototype.getCenteringOffset = function(maxCol) {
     var offset, width;
     if (maxCol == null) {
       maxCol = this.getMaxCol();
@@ -416,7 +417,7 @@ HTMLTileGrid = (function(_super) {
     return offset;
   };
 
-  HTMLTileGrid.prototype.initConversionUtils = function(tilex, tiley, marginx, marginy) {
+  DOMTileGrid.prototype.initConversionUtils = function(tilex, tiley, marginx, marginy) {
     this.colToLeft = function(col) {
       return this.centeringOffset + marginx + col * (tilex + marginx);
     };
@@ -467,9 +468,9 @@ HTMLTileGrid = (function(_super) {
     };
   };
 
-  HTMLTileGrid.prototype.setTile = function(focusTile, col, row) {
+  DOMTileGrid.prototype.setTile = function(focusTile, col, row) {
     var index;
-    HTMLTileGrid.__super__.setTile.apply(this, arguments);
+    DOMTileGrid.__super__.setTile.apply(this, arguments);
     index = $.inArray(focusTile, this.tiles);
     if (index === -1) {
       this.tiles.push(focusTile);
@@ -477,9 +478,9 @@ HTMLTileGrid = (function(_super) {
     return null;
   };
 
-  HTMLTileGrid.prototype.removeTile = function(focusTile) {
+  DOMTileGrid.prototype.removeTile = function(focusTile) {
     var index;
-    HTMLTileGrid.__super__.removeTile.apply(this, arguments);
+    DOMTileGrid.__super__.removeTile.apply(this, arguments);
     index = $.inArray(focusTile, this.tiles);
     if (index !== -1) {
       this.tiles.splice(index, 1);
@@ -487,7 +488,7 @@ HTMLTileGrid = (function(_super) {
     return null;
   };
 
-  HTMLTileGrid.prototype.sortTilesByPos = function() {
+  DOMTileGrid.prototype.sortTilesByPos = function() {
     this.tiles.sort(function(a, b) {
       if (a.row < b.row) {
         return -1;
@@ -500,7 +501,7 @@ HTMLTileGrid = (function(_super) {
     return null;
   };
 
-  HTMLTileGrid.prototype.appendAtFreeSpace = function(focusTile, col, row) {
+  DOMTileGrid.prototype.appendAtFreeSpace = function(focusTile, col, row) {
     var isSpaceEmpty, memberMaxCol, sizex, sizey;
     if (col == null) {
       col = 0;
@@ -526,13 +527,11 @@ HTMLTileGrid = (function(_super) {
     return null;
   };
 
-  return HTMLTileGrid;
+  return DOMTileGrid;
 
 })(TileGrid);
 
-var HTMLTile, Tile,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+var Tile;
 
 Tile = (function() {
   function Tile(sizex, sizey) {
@@ -573,16 +572,20 @@ Tile = (function() {
 
 })();
 
-HTMLTile = (function(_super) {
+var DOMTile,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+DOMTile = (function(_super) {
   var _changedTiles, _count;
 
-  __extends(HTMLTile, _super);
+  __extends(DOMTile, _super);
 
   _count = 0;
 
   _changedTiles = {};
 
-  HTMLTile.updateChangedTiles = function() {
+  DOMTile.updateChangedTiles = function() {
     var tile, _;
     for (_ in _changedTiles) {
       tile = _changedTiles[_];
@@ -592,16 +595,16 @@ HTMLTile = (function(_super) {
     return _changedTiles = {};
   };
 
-  function HTMLTile(el, grid, sizex, sizey) {
+  function DOMTile(el, grid, sizex, sizey) {
     this.el = el;
     this.grid = grid;
-    HTMLTile.__super__.constructor.call(this, sizex, sizey);
+    DOMTile.__super__.constructor.call(this, sizex, sizey);
     this.id = _count++;
     el.style.position = 'absolute';
     this.makeDraggable();
   }
 
-  HTMLTile.prototype.makeDraggable = function() {
+  DOMTile.prototype.makeDraggable = function() {
     var $el, $ghost,
       _this = this;
     $el = $(this.el);
@@ -651,31 +654,31 @@ HTMLTile = (function(_super) {
         left: _this.grid.colToLeft(_this.col),
         top: _this.grid.rowToTop(_this.row)
       });
-      return HTMLTile.updateChangedTiles();
+      return DOMTile.updateChangedTiles();
     });
     return null;
   };
 
-  HTMLTile.prototype.setPosition = function(grid, col, row) {
-    HTMLTile.__super__.setPosition.apply(this, arguments);
+  DOMTile.prototype.setPosition = function(grid, col, row) {
+    DOMTile.__super__.setPosition.apply(this, arguments);
     _changedTiles[this.id] = this;
     this.draggable.grid = grid;
     return null;
   };
 
-  HTMLTile.prototype.updateSize = function() {
+  DOMTile.prototype.updateSize = function() {
     this.el.style.width = this.grid.sizeToWidth(this.sizex) + 'px';
     this.el.style.height = this.grid.sizeToHeight(this.sizey) + 'px';
     return null;
   };
 
-  HTMLTile.prototype.updatePos = function() {
+  DOMTile.prototype.updatePos = function() {
     this.el.style.left = this.grid.colToLeft(this.col) + 'px';
     this.el.style.top = this.grid.rowToTop(this.row) + 'px';
     return null;
   };
 
-  return HTMLTile;
+  return DOMTile;
 
 })(Tile);
 
@@ -685,15 +688,15 @@ $.fn.grida = function(opts) {
   marginy = opts.margins[1];
   tilex = opts.base_dimensions[0];
   tiley = opts.base_dimensions[1];
-  grid = new HTMLTileGrid(this, tilex, tiley, marginx, marginy);
+  grid = new DOMTileGrid(this, tilex, tiley, marginx, marginy);
   _ref = this.children();
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     child = _ref[_i];
     $child = $(child);
     sizex = $child.data('xxx-sizex');
     sizey = $child.data('xxx-sizey');
-    tile = new HTMLTile(child, grid, sizex, sizey);
+    tile = new DOMTile(child, grid, sizex, sizey);
     grid.appendAtFreeSpace(tile);
   }
-  return HTMLTile.updateChangedTiles();
+  return DOMTile.updateChangedTiles();
 };

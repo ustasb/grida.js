@@ -2,12 +2,13 @@ module.exports = (grunt) ->
 
   buildOrder = [
     'src/constants.coffee'
-    'src/mouse_position.coffee'
     'src/draggable.coffee'
     'src/resizable.coffee'
     'src/grid.coffee'
     'src/tile_grid.coffee'
+    'src/dom_tile_grid.coffee'
     'src/tile.coffee'
+    'src/dom_tile.coffee'
     'src/plugin.coffee'
   ]
 
