@@ -29,9 +29,8 @@ class TileGrid extends Grid
 
     null
 
-  getLowestAboveRow: (focusTile, newCol, newRow) ->
-    col = newCol or focusTile.col
-    lowestRow = newRow or focusTile.row
+  getLowestAboveRow: (focusTile, col = focusTile.col, row = focusTile.row) ->
+    lowestRow = row
     sizex = focusTile.sizex
 
     while lowestRow > 0 and @get(col, lowestRow - 1, sizex, 1).length is 0
@@ -84,7 +83,7 @@ class TileGrid extends Grid
       dy = focusTile.row - row
 
       for tile in obstructingTiles by 1
-        if tile.sizey is dy
+        if tile.sizey is dy and @getLowestAboveRow(tile, col, row) is row
           swapOccured = true
           break
 
@@ -108,14 +107,18 @@ class TileGrid extends Grid
     aboveTiles = @get(col, row - 1, focusTile.sizex, 1)
 
     if aboveTiles.length is 0
-      newRow = @getLowestAboveRow(focusTile, col, row)
-      @collapseNeighborsAfter focusTile, => focusTile.setPosition(@, col, newRow)
-      return true
+      obstructingTiles = @get(col, row, focusTile.sizex, focusTile.sizey)
 
-    for tile in aboveTiles by 1
-      if tile.row + tile.sizey is row
-        @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
+      if obstructingTiles.length is 0
+        newRow = @getLowestAboveRow(focusTile, col, row)
+        @collapseNeighborsAfter focusTile, => focusTile.setPosition(@, col, newRow)
         return true
+
+    else
+      for tile in aboveTiles by 1
+        if tile.row + tile.sizey is row
+          @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
+          return true
 
     @setTile(focusTile, focusTile.col, focusTile.row)
     false
