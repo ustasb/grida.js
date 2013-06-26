@@ -104,6 +104,15 @@ describe 'A Grid class', ->
       items = grid.get(-1, -1, 1, 1)
       expect(items).toEqual([])
 
+      items = grid.get(0, 0, 0, 0)
+      expect(items).toEqual([])
+
+      items = grid.get(0, 0, 1, 0)
+      expect(items).toEqual([])
+
+      items = grid.get(0, 0, 0, 1)
+      expect(items).toEqual([])
+
       items = grid.get(0, 0, -1, 1)
       expect(items).toEqual([])
 

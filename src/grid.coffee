@@ -47,7 +47,7 @@ class Grid
 
   # Removes items in a grid area.
   # @param col, row, sizex, sizey [whole number]
-  # @param specificItem [any] If defined, only items equal to it are moved.
+  # @param specificItem [any] If defined, only items equal to it are removed.
   # @return [null]
   clear: (col, row, sizex = 1, sizey = 1, specificItem) ->
     grid = @grid
