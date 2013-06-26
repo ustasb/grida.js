@@ -1,24 +1,56 @@
+# Represents a grid composed of Tile instances.
 class TileGrid extends Grid
 
   constructor: ->
     super
 
+    @tiles = []
+
   setTile: (tile, col, row) ->
     @set(tile, col, row, tile.sizex, tile.sizey)
+
+    index = $.inArray(tile, @tiles)
+    @tiles.push(tile) if index is -1
+
     null
 
   removeTile: (tile) ->
     @clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
+
+    index = $.inArray(tile, @tiles)
+    @tiles.splice(index, 1) if index isnt -1
+
     null
 
-  # Inserts a tile at a position and shifts down any obstructing tiles.
-  # @param focusTile [Tile] the tile to move
+  sortTilesByPos: ->
+    @tiles.sort (a, b) ->
+      return -1 if a.row < b.row
+      return -1 if a.row is b.row and a.col < b.col
+      return 1
+
+    null
+
+  # Finds the lowest above row that the tile could shift up to.
+  # @param focusTile [Tile]
+  # @param col, row [whole number]
+  # @return [integer]
+  getLowestAboveRow: (focusTile, col = focusTile.col, row = focusTile.row) ->
+    lowestRow = row
+    sizex = focusTile.sizex
+
+    while lowestRow > 0 and @get(col, lowestRow - 1, sizex, 1).length is 0
+      lowestRow -= 1
+
+    lowestRow
+
+  # Inserts the tile at a position and shifts down any obstructing tiles.
+  # @param focusTile [Tile]
   # @param col, row [whole number]
   # @return [null]
   insertAt: (focusTile, col, row) ->
     focusTile.releasePosition()
 
-    # Tiles are in row order (smaller rows first).
+    # Tiles are in row-order (smaller rows first).
     obstructingTiles = @get(col, row, focusTile.sizex, focusTile.sizey)
 
     for tile in obstructingTiles by -1
@@ -29,18 +61,8 @@ class TileGrid extends Grid
 
     null
 
-  getLowestAboveRow: (focusTile, col = focusTile.col, row = focusTile.row) ->
-    lowestRow = row
-    sizex = focusTile.sizex
-
-    while lowestRow > 0 and @get(col, lowestRow - 1, sizex, 1).length is 0
-      lowestRow -= 1
-
-    lowestRow
-
-  # Moves a tile upwards until it encounters another tile or the grid's edge.
-  # @param focusTile [Tile] the tile to move
-  # @param recursive [boolean] if true, also move up below neighboring tiles
+  # Moves the tile upwards until it encounters a barrier.
+  # @param focusTile [Tile]
   # @return [null]
   collapseAboveEmptySpace: (focusTile) ->
     if focusTile.isInGrid() is false or focusTile.row is 0
@@ -53,8 +75,12 @@ class TileGrid extends Grid
 
     null
 
-  collapseNeighborsAfter: (focusTile, callback) ->
-    belowNeighbors = @get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1)
+  # Calls the callback and recursively shifts all old below neighbors up.
+  # @param tile [Tile]
+  # @param callback [function]
+  # @return [null]
+  collapseNeighborsAfter: (tile, callback) ->
+    belowNeighbors = @get(tile.col, tile.row + tile.sizey, tile.sizex, 1)
 
     callback() if callback?
 
@@ -64,6 +90,10 @@ class TileGrid extends Grid
 
     null
 
+  # Attempts to swap a tile with the tiles at the specified position.
+  # @param focusTile [Tile]
+  # @param col, row [whole number]
+  # @return [boolean] success status
   swapIfPossible: (focusTile, col, row) ->
     return false if row is focusTile.row
 
@@ -97,6 +127,13 @@ class TileGrid extends Grid
 
     swapOccured
 
+  # Tries to insert a tile at a location while maintaining the invariant:
+  #
+  #   Each tile must have an above neighbor tile except for tiles in row 0.
+  #
+  # @param focusTile [Tile]
+  # @param col, row [whole number]
+  # @return [boolean] success status
   attemptInsertAt: (focusTile, col, row) ->
     if row is 0
       @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)

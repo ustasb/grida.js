@@ -1,9 +1,9 @@
-describe 'An HTMLTileGrid class', ->
+describe 'A DOMTileGrid class', ->
   grid = null
   $container = $(document.createElement('div'))
 
   beforeEach ->
-    grid = new HTMLTileGrid($container, 10, 20, 5, 15)
+    grid = new DOMTileGrid($container, 10, 20, 5, 15)
 
   describe 'conversion utilities', ->
 

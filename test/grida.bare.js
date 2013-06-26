@@ -204,30 +204,39 @@ TileGrid = (function(_super) {
 
   function TileGrid() {
     TileGrid.__super__.constructor.apply(this, arguments);
+    this.tiles = [];
   }
 
   TileGrid.prototype.setTile = function(tile, col, row) {
+    var index;
     this.set(tile, col, row, tile.sizex, tile.sizey);
+    index = $.inArray(tile, this.tiles);
+    if (index === -1) {
+      this.tiles.push(tile);
+    }
     return null;
   };
 
   TileGrid.prototype.removeTile = function(tile) {
+    var index;
     this.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
+    index = $.inArray(tile, this.tiles);
+    if (index !== -1) {
+      this.tiles.splice(index, 1);
+    }
     return null;
   };
 
-  TileGrid.prototype.insertAt = function(focusTile, col, row) {
-    var dy, obstructingTiles, tile, _i;
-    focusTile.releasePosition();
-    obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
-    for (_i = obstructingTiles.length - 1; _i >= 0; _i += -1) {
-      tile = obstructingTiles[_i];
-      dy = (row + focusTile.sizey) - tile.row;
-      while (--dy >= 0) {
-        this.insertAt(tile, tile.col, tile.row + 1);
+  TileGrid.prototype.sortTilesByPos = function() {
+    this.tiles.sort(function(a, b) {
+      if (a.row < b.row) {
+        return -1;
       }
-    }
-    focusTile.setPosition(this, col, row);
+      if (a.row === b.row && a.col < b.col) {
+        return -1;
+      }
+      return 1;
+    });
     return null;
   };
 
@@ -247,6 +256,21 @@ TileGrid = (function(_super) {
     return lowestRow;
   };
 
+  TileGrid.prototype.insertAt = function(focusTile, col, row) {
+    var dy, obstructingTiles, tile, _i;
+    focusTile.releasePosition();
+    obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
+    for (_i = obstructingTiles.length - 1; _i >= 0; _i += -1) {
+      tile = obstructingTiles[_i];
+      dy = (row + focusTile.sizey) - tile.row;
+      while (--dy >= 0) {
+        this.insertAt(tile, tile.col, tile.row + 1);
+      }
+    }
+    focusTile.setPosition(this, col, row);
+    return null;
+  };
+
   TileGrid.prototype.collapseAboveEmptySpace = function(focusTile) {
     var newRow;
     if (focusTile.isInGrid() === false || focusTile.row === 0) {
@@ -259,10 +283,10 @@ TileGrid = (function(_super) {
     return null;
   };
 
-  TileGrid.prototype.collapseNeighborsAfter = function(focusTile, callback) {
+  TileGrid.prototype.collapseNeighborsAfter = function(tile, callback) {
     var belowNeighbors, neighbor, _i, _len,
       _this = this;
-    belowNeighbors = this.get(focusTile.col, focusTile.row + focusTile.sizey, focusTile.sizex, 1);
+    belowNeighbors = this.get(tile.col, tile.row + tile.sizey, tile.sizex, 1);
     if (callback != null) {
       callback();
     }
@@ -371,8 +395,6 @@ DOMTileGrid = (function(_super) {
     this.marginx = marginx;
     this.marginy = marginy;
     DOMTileGrid.__super__.constructor.apply(this, arguments);
-    this.initConversionUtils(tilex, tiley, marginx, marginy);
-    this.tiles = [];
     this.maxCol = this.getMaxCol();
     this.centeringOffset = this.getCenteringOffset();
     this.initEvents();
@@ -392,6 +414,62 @@ DOMTileGrid = (function(_super) {
       }
       return DOMTile.updateChangedTiles();
     });
+  };
+
+  DOMTileGrid.prototype.colToLeft = function(col) {
+    return this.centeringOffset + this.marginx + col * (this.tilex + this.marginx);
+  };
+
+  DOMTileGrid.prototype.leftToCol = function(left) {
+    return (left - this.marginx - this.centeringOffset) / (this.tilex + this.marginx);
+  };
+
+  DOMTileGrid.prototype.rowToTop = function(row) {
+    return this.marginy + row * (this.tiley + this.marginy);
+  };
+
+  DOMTileGrid.prototype.topToRow = function(top) {
+    return (top - this.marginy) / (this.tiley + this.marginy);
+  };
+
+  DOMTileGrid.prototype.sizeToWidth = function(size) {
+    if (size <= 0) {
+      if (size === 0) {
+        return 0;
+      }
+      throw new RangeError('A size cannot be negative.');
+    }
+    return size * (this.tilex + this.marginx) - this.marginx;
+  };
+
+  DOMTileGrid.prototype.widthToSize = function(width) {
+    if (width <= 0) {
+      if (width === 0) {
+        return 0;
+      }
+      throw new RangeError('A width cannot be negative.');
+    }
+    return (width + this.marginx) / (this.tilex + this.marginx);
+  };
+
+  DOMTileGrid.prototype.sizeToHeight = function(size) {
+    if (size <= 0) {
+      if (size === 0) {
+        return 0;
+      }
+      throw new RangeError('A size cannot be negative.');
+    }
+    return size * (this.tiley + this.marginy) - this.marginy;
+  };
+
+  DOMTileGrid.prototype.heightToSize = function(height) {
+    if (height <= 0) {
+      if (height === 0) {
+        return 0;
+      }
+      throw new RangeError('A height cannot be negative.');
+    }
+    return (height + this.marginy) / (this.tiley + this.marginy);
   };
 
   DOMTileGrid.prototype.getMaxCol = function() {
@@ -415,90 +493,6 @@ DOMTileGrid = (function(_super) {
       return 0;
     }
     return offset;
-  };
-
-  DOMTileGrid.prototype.initConversionUtils = function(tilex, tiley, marginx, marginy) {
-    this.colToLeft = function(col) {
-      return this.centeringOffset + marginx + col * (tilex + marginx);
-    };
-    this.leftToCol = function(left) {
-      return (left - marginx - this.centeringOffset) / (tilex + marginx);
-    };
-    this.rowToTop = function(row) {
-      return marginy + row * (tiley + marginy);
-    };
-    this.topToRow = function(top) {
-      return (top - marginy) / (tiley + marginy);
-    };
-    this.sizeToWidth = function(size) {
-      if (size <= 0) {
-        if (size === 0) {
-          return 0;
-        }
-        throw new RangeError('A size cannot be negative.');
-      }
-      return size * (tilex + marginx) - marginx;
-    };
-    this.widthToSize = function(width) {
-      if (width <= 0) {
-        if (width === 0) {
-          return 0;
-        }
-        throw new RangeError('A width cannot be negative.');
-      }
-      return (width + marginx) / (tilex + marginx);
-    };
-    this.sizeToHeight = function(size) {
-      if (size <= 0) {
-        if (size === 0) {
-          return 0;
-        }
-        throw new RangeError('A size cannot be negative.');
-      }
-      return size * (tiley + marginy) - marginy;
-    };
-    return this.heightToSize = function(height) {
-      if (height <= 0) {
-        if (height === 0) {
-          return 0;
-        }
-        throw new RangeError('A height cannot be negative.');
-      }
-      return (height + marginy) / (tiley + marginy);
-    };
-  };
-
-  DOMTileGrid.prototype.setTile = function(focusTile, col, row) {
-    var index;
-    DOMTileGrid.__super__.setTile.apply(this, arguments);
-    index = $.inArray(focusTile, this.tiles);
-    if (index === -1) {
-      this.tiles.push(focusTile);
-    }
-    return null;
-  };
-
-  DOMTileGrid.prototype.removeTile = function(focusTile) {
-    var index;
-    DOMTileGrid.__super__.removeTile.apply(this, arguments);
-    index = $.inArray(focusTile, this.tiles);
-    if (index !== -1) {
-      this.tiles.splice(index, 1);
-    }
-    return null;
-  };
-
-  DOMTileGrid.prototype.sortTilesByPos = function() {
-    this.tiles.sort(function(a, b) {
-      if (a.row < b.row) {
-        return -1;
-      }
-      if (a.row === b.row && a.col < b.col) {
-        return -1;
-      }
-      return 1;
-    });
-    return null;
   };
 
   DOMTileGrid.prototype.appendAtFreeSpace = function(focusTile, col, row) {
