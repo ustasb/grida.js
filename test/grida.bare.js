@@ -195,33 +195,33 @@ Grid = (function() {
 
 })();
 
-var TileGrid,
-  __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+var TileGrid;
 
-TileGrid = (function(_super) {
-  __extends(TileGrid, _super);
-
+TileGrid = (function() {
   function TileGrid() {
-    TileGrid.__super__.constructor.apply(this, arguments);
+    this.grid = new Grid;
     this.tiles = [];
   }
 
-  TileGrid.prototype.setTile = function(tile, col, row) {
-    var index;
-    this.set(tile, col, row, tile.sizex, tile.sizey);
-    index = $.inArray(tile, this.tiles);
-    if (index === -1) {
-      this.tiles.push(tile);
+  TileGrid.prototype.validateTile = function(tile) {
+    if (tile.grid !== this) {
+      throw new Error("The tile does not belong to this grid!");
     }
+    return null;
+  };
+
+  TileGrid.prototype.setTile = function(tile, col, row) {
+    tile.setPosition(this, col, row);
+    this.tiles.push(tile);
+    this.grid.set(tile, col, row, tile.sizex, tile.sizey);
     return null;
   };
 
   TileGrid.prototype.removeTile = function(tile) {
     var index;
-    this.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
     index = $.inArray(tile, this.tiles);
     if (index !== -1) {
+      this.grid.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
       this.tiles.splice(index, 1);
     }
     return null;
@@ -240,45 +240,46 @@ TileGrid = (function(_super) {
     return null;
   };
 
-  TileGrid.prototype.getLowestAboveRow = function(focusTile, col, row) {
-    var lowestRow, sizex;
-    if (col == null) {
-      col = focusTile.col;
-    }
-    if (row == null) {
-      row = focusTile.row;
-    }
-    lowestRow = row;
-    sizex = focusTile.sizex;
-    while (lowestRow > 0 && this.get(col, lowestRow - 1, sizex, 1).length === 0) {
-      lowestRow -= 1;
-    }
-    return lowestRow;
-  };
-
   TileGrid.prototype.insertAt = function(focusTile, col, row) {
     var dy, obstructingTiles, tile, _i;
-    focusTile.releasePosition();
-    obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
+    obstructingTiles = this.grid.get(col, row, focusTile.sizex, focusTile.sizey);
     for (_i = obstructingTiles.length - 1; _i >= 0; _i += -1) {
       tile = obstructingTiles[_i];
+      if (tile === focusTile) {
+        continue;
+      }
       dy = (row + focusTile.sizey) - tile.row;
       while (--dy >= 0) {
         this.insertAt(tile, tile.col, tile.row + 1);
       }
     }
-    focusTile.setPosition(this, col, row);
+    this.setTile(focusTile, col, row);
     return null;
   };
 
-  TileGrid.prototype.collapseAboveEmptySpace = function(focusTile) {
-    var newRow;
-    if (focusTile.isInGrid() === false || focusTile.row === 0) {
-      return null;
+  TileGrid.prototype.getLowestAboveRow = function(tile, col, row) {
+    var lowestRow, sizex;
+    if (col == null) {
+      col = tile.col;
     }
-    newRow = this.getLowestAboveRow(focusTile);
-    if (newRow !== focusTile.row) {
-      focusTile.setPosition(this, focusTile.col, newRow);
+    if (row == null) {
+      row = tile.row;
+    }
+    this.validateTile(tile);
+    lowestRow = row;
+    sizex = tile.sizex;
+    while (lowestRow > 0 && this.grid.get(col, lowestRow - 1, sizex, 1).length === 0) {
+      lowestRow -= 1;
+    }
+    return lowestRow;
+  };
+
+  TileGrid.prototype.collapseAboveEmptySpace = function(tile) {
+    var newRow;
+    this.validateTile(tile);
+    newRow = this.getLowestAboveRow(tile);
+    if (newRow !== tile.row) {
+      this.setTile(tile, tile.col, newRow);
     }
     return null;
   };
@@ -286,7 +287,8 @@ TileGrid = (function(_super) {
   TileGrid.prototype.collapseNeighborsAfter = function(tile, callback) {
     var belowNeighbors, neighbor, _i, _len,
       _this = this;
-    belowNeighbors = this.get(tile.col, tile.row + tile.sizey, tile.sizex, 1);
+    this.validateTile(tile);
+    belowNeighbors = this.grid.get(tile.col, tile.row + tile.sizey, tile.sizex, 1);
     if (callback != null) {
       callback();
     }
@@ -300,23 +302,19 @@ TileGrid = (function(_super) {
   };
 
   TileGrid.prototype.swapIfPossible = function(focusTile, col, row) {
-    var dy, newRow, obstructingTiles, swapOccured, tile, _i, _j, _len, _len1,
+    var dy, obstructingTiles, swapOccured, tile, _i, _j, _len, _len1,
       _this = this;
     if (row === focusTile.row) {
       return false;
     }
     swapOccured = false;
-    this.removeTile(focusTile);
-    obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
+    obstructingTiles = this.grid.get(col, row, focusTile.sizex, focusTile.sizey);
     if (row > focusTile.row) {
       for (_i = 0, _len = obstructingTiles.length; _i < _len; _i += 1) {
         tile = obstructingTiles[_i];
-        newRow = this.getLowestAboveRow(tile);
-        if (newRow + tile.sizey === row) {
+        if (focusTile.row + tile.sizey === row) {
           swapOccured = true;
-          this.collapseNeighborsAfter(tile, function() {
-            return _this.insertAt(tile, tile.col, newRow);
-          });
+          this.setTile(tile, tile.col, focusTile.row);
         }
       }
     } else {
@@ -333,8 +331,6 @@ TileGrid = (function(_super) {
       this.collapseNeighborsAfter(focusTile, function() {
         return _this.insertAt(focusTile, col, row);
       });
-    } else {
-      this.setTile(focusTile, focusTile.col, focusTile.row);
     }
     return swapOccured;
   };
@@ -348,17 +344,14 @@ TileGrid = (function(_super) {
       });
       return true;
     }
-    if (this.swapIfPossible(focusTile, col, row)) {
-      return true;
-    }
     this.removeTile(focusTile);
-    aboveTiles = this.get(col, row - 1, focusTile.sizex, 1);
+    aboveTiles = this.grid.get(col, row - 1, focusTile.sizex, 1);
     if (aboveTiles.length === 0) {
-      obstructingTiles = this.get(col, row, focusTile.sizex, focusTile.sizey);
+      obstructingTiles = this.grid.get(col, row, focusTile.sizex, focusTile.sizey);
       if (obstructingTiles.length === 0) {
         newRow = this.getLowestAboveRow(focusTile, col, row);
         this.collapseNeighborsAfter(focusTile, function() {
-          return focusTile.setPosition(_this, col, newRow);
+          return _this.setTile(focusTile, col, newRow);
         });
         return true;
       }
@@ -379,7 +372,7 @@ TileGrid = (function(_super) {
 
   return TileGrid;
 
-})(Grid);
+})();
 
 var DOMTileGrid,
   __hasProp = {}.hasOwnProperty,
@@ -406,7 +399,7 @@ DOMTileGrid = (function(_super) {
       var tile, _i, _len, _ref;
       _this.maxCol = _this.getMaxCol();
       _this.centeringOffset = _this.getCenteringOffset(_this.maxCol);
-      _this.grid = [];
+      _this.grid.grid = [];
       _ref = _this.tiles.slice(0);
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         tile = _ref[_i];
@@ -505,7 +498,7 @@ DOMTileGrid = (function(_super) {
     }
     sizex = focusTile.sizex;
     sizey = focusTile.sizey;
-    isSpaceEmpty = this.get(col, row, sizex, sizey).length === 0;
+    isSpaceEmpty = this.grid.get(col, row, sizex, sizey).length === 0;
     memberMaxCol = col + (sizex - 1);
     if (memberMaxCol > this.maxCol) {
       if (sizex > (this.maxCol + 1) && isSpaceEmpty) {
@@ -528,38 +521,48 @@ DOMTileGrid = (function(_super) {
 var Tile;
 
 Tile = (function() {
+  var _count;
+
+  _count = 0;
+
   function Tile(sizex, sizey) {
-    this.sizex = sizex != null ? sizex : 1;
-    this.sizey = sizey != null ? sizey : 1;
-    if (sizex < 0 || sizey < 0) {
-      throw new RangeError('A size cannot be negative.');
+    if (sizex == null) {
+      sizex = 1;
     }
+    if (sizey == null) {
+      sizey = 1;
+    }
+    this.id = _count++;
+    this.setSize(sizex, sizey);
+    this.grid = null;
     this.col = null;
     this.row = null;
   }
+
+  Tile.prototype.setSize = function(sizex, sizey) {
+    if (sizex < 0 || sizey < 0) {
+      throw new RangeError('A size cannot be negative.');
+    }
+    this.sizex = sizex;
+    return this.sizey = sizey;
+  };
 
   Tile.prototype.setPosition = function(grid, col, row) {
     this.releasePosition();
     this.grid = grid;
     this.col = col;
     this.row = row;
-    this.grid.setTile(this, col, row);
     return null;
   };
 
   Tile.prototype.releasePosition = function() {
-    if (this.isInGrid() === false) {
-      return null;
+    if (this.grid != null) {
+      this.grid.removeTile(this);
     }
-    this.grid.removeTile(this);
     this.grid = null;
     this.col = null;
     this.row = null;
     return null;
-  };
-
-  Tile.prototype.isInGrid = function() {
-    return (this.grid != null) && (this.col != null) && (this.row != null);
   };
 
   return Tile;
@@ -571,31 +574,34 @@ var DOMTile,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 DOMTile = (function(_super) {
-  var _changedTiles, _count;
+  var _changedPositions, _changedSizes;
 
   __extends(DOMTile, _super);
 
-  _count = 0;
+  _changedSizes = {};
 
-  _changedTiles = {};
+  _changedPositions = {};
 
   DOMTile.updateChangedTiles = function() {
     var tile, _;
-    for (_ in _changedTiles) {
-      tile = _changedTiles[_];
-      tile.updatePos();
+    for (_ in _changedSizes) {
+      tile = _changedSizes[_];
       tile.updateSize();
     }
-    return _changedTiles = {};
+    _changedSizes = {};
+    for (_ in _changedPositions) {
+      tile = _changedPositions[_];
+      tile.updatePos();
+    }
+    return _changedPositions = {};
   };
 
   function DOMTile(el, grid, sizex, sizey) {
     this.el = el;
     this.grid = grid;
     DOMTile.__super__.constructor.call(this, sizex, sizey);
-    this.id = _count++;
     el.style.position = 'absolute';
-    this.makeDraggable();
+    this.draggable = this.makeDraggable();
   }
 
   DOMTile.prototype.makeDraggable = function() {
@@ -608,7 +614,6 @@ DOMTile = (function(_super) {
       backgroundColor: 'blue',
       zIndex: -1
     });
-    this.draggable = new SnapDraggable(this.el, this.grid);
     $el.on('xxx-draggable-mousedown', function(e) {
       var position;
       position = $el.position();
@@ -650,12 +655,18 @@ DOMTile = (function(_super) {
       });
       return DOMTile.updateChangedTiles();
     });
+    return new SnapDraggable(this.el, this.grid);
+  };
+
+  DOMTile.prototype.setSize = function(sizex, sizey) {
+    DOMTile.__super__.setSize.apply(this, arguments);
+    _changedSizes[this.id] = this;
     return null;
   };
 
   DOMTile.prototype.setPosition = function(grid, col, row) {
     DOMTile.__super__.setPosition.apply(this, arguments);
-    _changedTiles[this.id] = this;
+    _changedPositions[this.id] = this;
     this.draggable.grid = grid;
     return null;
   };

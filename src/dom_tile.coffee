@@ -1,26 +1,21 @@
 class DOMTile extends Tile
 
-  # Number of tiles created.
-  _count = 0
-
-  # Tiles that need their CSS updated.
-  _changedTiles = {}
+  _changedSizes = {}
+  _changedPositions = {}
 
   @updateChangedTiles: ->
-    for _, tile of _changedTiles
-      tile.updatePos()
-      tile.updateSize()
+    tile.updateSize() for _, tile of _changedSizes
+    _changedSizes = {}
 
-    _changedTiles = {}
+    tile.updatePos() for _, tile of _changedPositions
+    _changedPositions = {}
 
   constructor: (@el, @grid, sizex, sizey) ->
     super(sizex, sizey)
 
-    @id = _count++
-
     el.style.position = 'absolute'
 
-    @makeDraggable()
+    @draggable = @makeDraggable()
 
   makeDraggable: ->
     $el = $(@el)
@@ -30,8 +25,6 @@ class DOMTile extends Tile
       position: 'absolute'
       backgroundColor: 'blue'
       zIndex: -1
-
-    @draggable = new SnapDraggable(@el, @grid)
 
     $el.on 'xxx-draggable-mousedown', (e) =>
       position = $el.position()
@@ -68,12 +61,19 @@ class DOMTile extends Tile
 
       DOMTile.updateChangedTiles()
 
+    new SnapDraggable(@el, @grid)
+
+  setSize: (sizex, sizey) ->
+    super
+
+    _changedSizes[@id] = @
+
     null
 
   setPosition: (grid, col, row) ->
     super
 
-    _changedTiles[@id] = @
+    _changedPositions[@id] = @
     @draggable.grid = grid
 
     null

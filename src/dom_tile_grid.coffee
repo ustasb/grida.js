@@ -13,7 +13,7 @@ class DOMTileGrid extends TileGrid
       @maxCol = @getMaxCol()
       @centeringOffset = @getCenteringOffset(@maxCol)
 
-      @grid = []
+      @grid.grid = []
       @appendAtFreeSpace(tile) for tile in @tiles.slice(0)
       DOMTile.updateChangedTiles()
 
@@ -80,7 +80,7 @@ class DOMTileGrid extends TileGrid
   appendAtFreeSpace: (focusTile, col = 0, row = 0) ->
     sizex = focusTile.sizex
     sizey = focusTile.sizey
-    isSpaceEmpty = @get(col, row, sizex, sizey).length is 0
+    isSpaceEmpty = @grid.get(col, row, sizex, sizey).length is 0
     memberMaxCol = col + (sizex - 1)
 
     if memberMaxCol > @maxCol
