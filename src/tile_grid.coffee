@@ -107,13 +107,15 @@ class TileGrid
     return false if row is focusTile.row
 
     swapOccured = false
+
+    @removeTile(focusTile)
     obstructingTiles = @grid.get(col, row, focusTile.sizex, focusTile.sizey)
 
     if row > focusTile.row
       for tile in obstructingTiles by 1
-        if focusTile.row + tile.sizey is row
-          swapOccured = true
+        if focusTile.row + tile.sizey is row and @getLowestAboveRow(tile) is focusTile.row
           @setTile(tile, tile.col, focusTile.row)
+          swapOccured = true
 
     else
       dy = focusTile.row - row
@@ -126,6 +128,8 @@ class TileGrid
     if swapOccured
       @collapseNeighborsAfter focusTile, =>
         @insertAt(focusTile, col, row)
+    else
+      @setTile(focusTile, focusTile.col, focusTile.row)
 
     swapOccured
 
@@ -141,8 +145,8 @@ class TileGrid
       @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
       return true
 
-    #if @swapIfPossible(focusTile, col, row)
-      #return true
+    if @swapIfPossible(focusTile, col, row)
+      return true
 
     @removeTile(focusTile)
     aboveTiles = @grid.get(col, row - 1, focusTile.sizex, 1)
@@ -156,9 +160,17 @@ class TileGrid
         return true
 
     else
+
       for tile in aboveTiles by 1
         if tile.row + tile.sizey is row
           @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
+          return true
+
+        lowestRow = @getLowestAboveRow(tile)
+        if lowestRow + tile.sizey is row
+          @collapseNeighborsAfter tile, =>
+            @insertAt(tile, tile.col, lowestRow)
+            @insertAt(focusTile, col, row)
           return true
 
     @setTile(focusTile, focusTile.col, focusTile.row)

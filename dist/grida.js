@@ -301,13 +301,14 @@
         return false;
       }
       swapOccured = false;
+      this.removeTile(focusTile);
       obstructingTiles = this.grid.get(col, row, focusTile.sizex, focusTile.sizey);
       if (row > focusTile.row) {
         for (_i = 0, _len = obstructingTiles.length; _i < _len; _i += 1) {
           tile = obstructingTiles[_i];
-          if (focusTile.row + tile.sizey === row) {
-            swapOccured = true;
+          if (focusTile.row + tile.sizey === row && this.getLowestAboveRow(tile) === focusTile.row) {
             this.setTile(tile, tile.col, focusTile.row);
+            swapOccured = true;
           }
         }
       } else {
@@ -324,17 +325,22 @@
         this.collapseNeighborsAfter(focusTile, function() {
           return _this.insertAt(focusTile, col, row);
         });
+      } else {
+        this.setTile(focusTile, focusTile.col, focusTile.row);
       }
       return swapOccured;
     };
 
     TileGrid.prototype.attemptInsertAt = function(focusTile, col, row) {
-      var aboveTiles, newRow, obstructingTiles, tile, _i, _len,
+      var aboveTiles, lowestRow, newRow, obstructingTiles, tile, _i, _len,
         _this = this;
       if (row === 0) {
         this.collapseNeighborsAfter(focusTile, function() {
           return _this.insertAt(focusTile, col, row);
         });
+        return true;
+      }
+      if (this.swapIfPossible(focusTile, col, row)) {
         return true;
       }
       this.removeTile(focusTile);
@@ -353,6 +359,14 @@
           tile = aboveTiles[_i];
           if (tile.row + tile.sizey === row) {
             this.collapseNeighborsAfter(focusTile, function() {
+              return _this.insertAt(focusTile, col, row);
+            });
+            return true;
+          }
+          lowestRow = this.getLowestAboveRow(tile);
+          if (lowestRow + tile.sizey === row) {
+            this.collapseNeighborsAfter(tile, function() {
+              _this.insertAt(tile, tile.col, lowestRow);
               return _this.insertAt(focusTile, col, row);
             });
             return true;
