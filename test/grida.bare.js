@@ -658,13 +658,17 @@ var DOMTile,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 DOMTile = (function(_super) {
-  var _changedPositions, _changedSizes;
+  var _ANIMATE_SPEED, _changedPositions, _changedSizes, _draggingTile;
 
   __extends(DOMTile, _super);
+
+  _ANIMATE_SPEED = 160;
 
   _changedSizes = {};
 
   _changedPositions = {};
+
+  _draggingTile = null;
 
   DOMTile.updateChangedTiles = function() {
     var tile, _;
@@ -708,11 +712,12 @@ DOMTile = (function(_super) {
       }).appendTo($el.parent());
     });
     $el.on('xxx-resizable-mouseup', function(e) {
-      $el.css({
+      return $el.animate({
         width: $ghost.width(),
         height: $ghost.height()
+      }, _ANIMATE_SPEED, 'swing', function() {
+        return $ghost.remove();
       });
-      return $ghost.remove();
     });
     $el.on('xxx-resizable-snap', function(e, sizex, sizey) {
       var maxCol;
@@ -746,21 +751,24 @@ DOMTile = (function(_super) {
     $el.on('xxx-draggable-mousedown', function(e) {
       var position;
       position = $el.position();
-      return $ghost.css({
+      $ghost.css({
         left: position.left,
         top: position.top,
         width: $el.width(),
         height: $el.height()
       }).appendTo($el.parent());
+      return _draggingTile = _this;
     });
     $el.on('xxx-draggable-mouseup', function(e) {
       var position;
       position = $ghost.position();
-      $el.css({
+      $el.animate({
         left: position.left,
         top: position.top
+      }, _ANIMATE_SPEED, 'swing', function() {
+        return $ghost.remove();
       });
-      return $ghost.remove();
+      return _draggingTile = null;
     });
     $el.on('xxx-draggable-snap', function(e, col, row) {
       var maxCol;
@@ -789,13 +797,17 @@ DOMTile = (function(_super) {
 
   DOMTile.prototype.setSize = function(sizex, sizey) {
     DOMTile.__super__.setSize.apply(this, arguments);
-    _changedSizes[this.id] = this;
+    if (_draggingTile !== this) {
+      _changedSizes[this.id] = this;
+    }
     return null;
   };
 
   DOMTile.prototype.setPosition = function(grid, col, row) {
     DOMTile.__super__.setPosition.apply(this, arguments);
-    _changedPositions[this.id] = this;
+    if (_draggingTile !== this) {
+      _changedPositions[this.id] = this;
+    }
     this.draggable.grid = grid;
     this.resizable.grid = grid;
     return null;
@@ -808,8 +820,10 @@ DOMTile = (function(_super) {
   };
 
   DOMTile.prototype.updatePos = function() {
-    this.el.style.left = this.grid.colToLeft(this.col) + 'px';
-    this.el.style.top = this.grid.rowToTop(this.row) + 'px';
+    $(this.el).stop(true).animate({
+      left: this.grid.colToLeft(this.col),
+      top: this.grid.rowToTop(this.row)
+    }, _ANIMATE_SPEED);
     return null;
   };
 

@@ -1,7 +1,10 @@
 class DOMTile extends Tile
+  _ANIMATE_SPEED = 160
 
   _changedSizes = {}
   _changedPositions = {}
+
+  _draggingTile = null
 
   @updateChangedTiles: ->
     tile.updateSize() for _, tile of _changedSizes
@@ -35,10 +38,10 @@ class DOMTile extends Tile
       .appendTo $el.parent()
 
     $el.on 'xxx-resizable-mouseup', (e) =>
-      $el.css
+      $el.animate
         width: $ghost.width()
         height: $ghost.height()
-      $ghost.remove()
+      , _ANIMATE_SPEED, 'swing', -> $ghost.remove()
 
     $el.on 'xxx-resizable-snap', (e, sizex, sizey) =>
       maxCol = @grid.maxCol
@@ -75,12 +78,16 @@ class DOMTile extends Tile
         height: $el.height()
       .appendTo $el.parent()
 
+      _draggingTile = @
+
     $el.on 'xxx-draggable-mouseup', (e) =>
       position = $ghost.position()
-      $el.css
+      $el.animate
         left: position.left
         top: position.top
-      $ghost.remove()
+      , _ANIMATE_SPEED, 'swing', -> $ghost.remove()
+
+      _draggingTile = null
 
     $el.on 'xxx-draggable-snap', (e, col, row) =>
       col = 0 if col < 0
@@ -106,14 +113,15 @@ class DOMTile extends Tile
   setSize: (sizex, sizey) ->
     super
 
-    _changedSizes[@id] = @
+    _changedSizes[@id] = @ if _draggingTile isnt @
 
     null
 
   setPosition: (grid, col, row) ->
     super
 
-    _changedPositions[@id] = @
+    _changedPositions[@id] = @ if _draggingTile isnt @
+
     @draggable.grid = grid
     @resizable.grid = grid
 
@@ -126,7 +134,9 @@ class DOMTile extends Tile
     null
 
   updatePos: ->
-    @el.style.left = @grid.colToLeft(@col) + 'px'
-    @el.style.top = @grid.rowToTop(@row) + 'px'
+    $(@el).stop(true).animate
+      left: @grid.colToLeft(@col)
+      top: @grid.rowToTop(@row)
+    , _ANIMATE_SPEED
 
     null
