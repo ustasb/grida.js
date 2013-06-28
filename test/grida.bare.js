@@ -487,18 +487,23 @@ DOMTileGrid = (function(_super) {
   }
 
   DOMTileGrid.prototype.initEvents = function() {
-    var _this = this;
+    var initTile, initWidth,
+      _this = this;
+    initWidth = $WINDOW.width();
+    initTile = this.tilex;
     return $WINDOW.resize(function() {
-      var tile, _i, _len, _ref;
+      var tile, _i, _len, _ref, _results;
       _this.maxCol = _this.getMaxCol();
       _this.centeringOffset = _this.getCenteringOffset(_this.maxCol);
-      _this.grid.grid = [];
-      _ref = _this.tiles.slice(0);
+      _this.tilex = initTile * ($WINDOW.width() / initWidth);
+      _ref = _this.tiles;
+      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         tile = _ref[_i];
-        _this.appendAtFreeSpace(tile);
+        tile.updatePos();
+        _results.push(tile.updateSize());
       }
-      return DOMTile.updateChangedTiles();
+      return _results;
     });
   };
 

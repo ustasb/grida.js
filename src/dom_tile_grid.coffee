@@ -9,13 +9,21 @@ class DOMTileGrid extends TileGrid
     @initEvents()
 
   initEvents: ->
+    initWidth = $WINDOW.width()
+    initTile = @tilex
+
     $WINDOW.resize =>
       @maxCol = @getMaxCol()
       @centeringOffset = @getCenteringOffset(@maxCol)
 
-      @grid.grid = []
-      @appendAtFreeSpace(tile) for tile in @tiles.slice(0)
-      DOMTile.updateChangedTiles()
+      #@grid.grid = []
+      #@appendAtFreeSpace(tile) for tile in @tiles.slice(0)
+      #DOMTile.updateChangedTiles()
+
+      @tilex = initTile * ($WINDOW.width() / initWidth)
+      for tile in @tiles
+        tile.updatePos()
+        tile.updateSize()
 
   # Converts a column unit to a CSS left position.
   colToLeft: (col) ->
