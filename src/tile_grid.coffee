@@ -99,40 +99,6 @@ class TileGrid
 
     null
 
-  # Attempts to swap a tile with the tiles at the specified position.
-  # @param focusTile [Tile]
-  # @param col, row [whole number]
-  # @return [boolean] success status
-  swapIfPossible: (focusTile, col, row) ->
-    return false if row is focusTile.row
-
-    swapOccured = false
-
-    @removeTile(focusTile)
-    obstructingTiles = @grid.get(col, row, focusTile.sizex, focusTile.sizey)
-
-    if row > focusTile.row
-      for tile in obstructingTiles by 1
-        if focusTile.row + tile.sizey is row and @getLowestAboveRow(tile) is focusTile.row
-          @setTile(tile, tile.col, focusTile.row)
-          swapOccured = true
-
-    else
-      dy = focusTile.row - row
-
-      for tile in obstructingTiles by 1
-        if tile.sizey is dy and @getLowestAboveRow(tile, col, row) is row
-          swapOccured = true
-          break
-
-    if swapOccured
-      @collapseNeighborsAfter focusTile, =>
-        @insertAt(focusTile, col, row)
-    else
-      @setTile(focusTile, focusTile.col, focusTile.row)
-
-    swapOccured
-
   # Tries to insert a tile at a location while maintaining the invariant:
   #
   #   Each tile must have an above neighbor tile except for tiles in row 0.
@@ -145,33 +111,39 @@ class TileGrid
       @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
       return true
 
-    if @swapIfPossible(focusTile, col, row)
-      return true
+    @grid.clear(focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey)
+    obstructingTiles = @grid.get(col, row, focusTile.sizex, focusTile.sizey)
 
-    @removeTile(focusTile)
-    aboveTiles = @grid.get(col, row - 1, focusTile.sizex, 1)
+    if row > focusTile.row
+      for oTile in obstructingTiles by 1
+        if focusTile.row + oTile.sizey is row and @getLowestAboveRow(oTile) is focusTile.row
+          @collapseNeighborsAfter oTile, => @setTile(oTile, oTile.col, focusTile.row)
+          swapOccured = true
 
-    if aboveTiles.length is 0
-      obstructingTiles = @grid.get(col, row, focusTile.sizex, focusTile.sizey)
-
-      if obstructingTiles.length is 0
-        newRow = @getLowestAboveRow(focusTile, col, row)
-        @collapseNeighborsAfter focusTile, => @setTile(focusTile, col, newRow)
+      if swapOccured
+        @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
         return true
 
-    else
+    aboveTiles = @grid.get(col, row - 1, focusTile.sizex, 1)
 
-      for tile in aboveTiles by 1
-        if tile.row + tile.sizey is row
-          @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
-          return true
+    if aboveTiles.length is 0 and obstructingTiles.length is 0
+      newRow = @getLowestAboveRow(focusTile, col, row)
+      @collapseNeighborsAfter focusTile, => @setTile(focusTile, col, newRow)
+      return true
 
-        lowestRow = @getLowestAboveRow(tile)
-        if lowestRow + tile.sizey is row
-          @collapseNeighborsAfter tile, =>
-            @insertAt(tile, tile.col, lowestRow)
-            @insertAt(focusTile, col, row)
-          return true
+    for tile in aboveTiles by 1
+      if tile.row + tile.sizey is row
+        @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
+        return true
 
-    @setTile(focusTile, focusTile.col, focusTile.row)
+    for tile in obstructingTiles by 1
+      lowestRow = @getLowestAboveRow(tile)
+      if lowestRow + tile.sizey is row
+        @collapseNeighborsAfter tile, =>
+          @setTile(tile, tile.col, lowestRow)
+          @insertAt(focusTile, col, row)
+        return true
+
+    @grid.set(focusTile, focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey)
+
     false
