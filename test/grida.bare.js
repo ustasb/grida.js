@@ -9,14 +9,6 @@ var Draggable, SnapDraggable,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
 Draggable = (function() {
-  Draggable.create = function(el, grid) {
-    if (grid) {
-      return new SnapDraggable(el, grid);
-    } else {
-      return new Draggable(el);
-    }
-  };
-
   function Draggable(el) {
     this.el = $(el).get(0);
     this.setCssAbsolute();
@@ -111,7 +103,117 @@ SnapDraggable = (function(_super) {
 
 })(Draggable);
 
+var Resizable, SnapResizable,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
+Resizable = (function() {
+  function Resizable(el) {
+    this.el = $(el).get(0);
+    this.addHandle();
+    this.initEvents();
+  }
+
+  Resizable.prototype.addHandle = function() {
+    var $handle;
+    $handle = $('<div class="xxx-handle-se"></div>');
+    $handle.css({
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      width: 25,
+      height: 25,
+      backgroundColor: 'blue'
+    });
+    return $(this.el).append($handle);
+  };
+
+  Resizable.prototype.initEvents = function() {
+    var $el, $handle, mousemove, oldzIndex,
+      _this = this;
+    $el = $(this.el);
+    $handle = $el.children('.xxx-handle-se');
+    oldzIndex = null;
+    mousemove = null;
+    $handle.mousedown(function(event) {
+      event.stopPropagation();
+      oldzIndex = $el.css('z-index');
+      $el.css('z-index', 99999);
+      $el.trigger('xxx-resizable-mousedown', [event]);
+      mousemove = _this.getMousemoveCB(event.pageX, event.pageY);
+      $DOCUMENT.mousemove(mousemove);
+      return false;
+    });
+    return $WINDOW.mouseup(function(event) {
+      if (!mousemove) {
+        return null;
+      }
+      $el.css('z-index', oldzIndex);
+      $el.trigger('xxx-resizable-mouseup', [event]);
+      $DOCUMENT.unbind('mousemove', mousemove);
+      return mousemove = null;
+    });
+  };
+
+  Resizable.prototype.getMousemoveCB = function(mousex, mousey) {
+    var $el, el, startLeft, startTop;
+    el = this.el;
+    $el = $(el);
+    startLeft = mousex - $el.width();
+    startTop = mousey - $el.height();
+    return function(event) {
+      el.style.width = event.pageX - startLeft + 'px';
+      return el.style.height = event.pageY - startTop + 'px';
+    };
+  };
+
+  return Resizable;
+
+})();
+
+SnapResizable = (function(_super) {
+  __extends(SnapResizable, _super);
+
+  function SnapResizable(el, grid) {
+    this.grid = grid;
+    SnapResizable.__super__.constructor.call(this, el);
+  }
+
+  SnapResizable.prototype.getMousemoveCB = function(mousex, mousey) {
+    var $el, el, grid, oldSize, position, round, startLeft, startTop;
+    el = this.el;
+    $el = $(el);
+    grid = this.grid;
+    round = Math.round;
+    position = $el.position();
+    startLeft = mousex - $el.width();
+    startTop = mousey - $el.height();
+    oldSize = round(grid.widthToSize($el.width())) + 'x' + round(grid.heightToSize($el.height()));
+    return function(event) {
+      var height, newSize, sizex, sizey, width;
+      width = event.pageX - startLeft;
+      height = event.pageY - startTop;
+      sizex = round(grid.widthToSize(width));
+      sizey = round(grid.heightToSize(height));
+      if (sizex === 0) {
+        sizex = 1;
+      }
+      if (sizey === 0) {
+        sizey = 1;
+      }
+      newSize = sizex + 'x' + sizey;
+      if (newSize !== oldSize) {
+        $el.trigger('xxx-resizable-snap', [sizex, sizey]);
+        oldSize = newSize;
+      }
+      el.style.width = width + 'px';
+      return el.style.height = height + 'px';
+    };
+  };
+
+  return SnapResizable;
+
+})(Resizable);
 
 var Grid;
 
@@ -418,40 +520,28 @@ DOMTileGrid = (function(_super) {
 
   DOMTileGrid.prototype.sizeToWidth = function(size) {
     if (size <= 0) {
-      if (size === 0) {
-        return 0;
-      }
-      throw new RangeError('A size cannot be negative.');
+      return 0;
     }
     return size * (this.tilex + this.marginx) - this.marginx;
   };
 
   DOMTileGrid.prototype.widthToSize = function(width) {
     if (width <= 0) {
-      if (width === 0) {
-        return 0;
-      }
-      throw new RangeError('A width cannot be negative.');
+      return 0;
     }
     return (width + this.marginx) / (this.tilex + this.marginx);
   };
 
   DOMTileGrid.prototype.sizeToHeight = function(size) {
     if (size <= 0) {
-      if (size === 0) {
-        return 0;
-      }
-      throw new RangeError('A size cannot be negative.');
+      return 0;
     }
     return size * (this.tiley + this.marginy) - this.marginy;
   };
 
   DOMTileGrid.prototype.heightToSize = function(height) {
     if (height <= 0) {
-      if (height === 0) {
-        return 0;
-      }
-      throw new RangeError('A height cannot be negative.');
+      return 0;
     }
     return (height + this.marginy) / (this.tiley + this.marginy);
   };
@@ -531,6 +621,9 @@ Tile = (function() {
   }
 
   Tile.prototype.setSize = function(sizex, sizey) {
+    if (this.grid != null) {
+      this.grid.removeTile(this);
+    }
     if (sizex < 0 || sizey < 0) {
       throw new RangeError('A size cannot be negative.');
     }
@@ -593,7 +686,52 @@ DOMTile = (function(_super) {
     DOMTile.__super__.constructor.call(this, sizex, sizey);
     el.style.position = 'absolute';
     this.draggable = this.makeDraggable();
+    this.resizable = this.makeResizable();
   }
+
+  DOMTile.prototype.makeResizable = function() {
+    var $el, $ghost,
+      _this = this;
+    $el = $(this.el);
+    $ghost = $('<div class="xxx-draggable-ghost"></div>');
+    $ghost.css({
+      position: 'absolute',
+      backgroundColor: 'blue',
+      zIndex: -1
+    });
+    $el.on('xxx-resizable-mousedown', function(e) {
+      var position;
+      position = $el.position();
+      return $ghost.css({
+        left: position.left,
+        top: position.top
+      }).appendTo($el.parent());
+    });
+    $el.on('xxx-resizable-mouseup', function(e) {
+      $el.css({
+        width: $ghost.width(),
+        height: $ghost.height()
+      });
+      return $ghost.remove();
+    });
+    $el.on('xxx-resizable-snap', function(e, sizex, sizey) {
+      var maxCol;
+      maxCol = _this.grid.maxCol;
+      if (_this.col + sizex > maxCol) {
+        sizex = (maxCol - _this.col) + 1;
+      }
+      _this.grid.collapseNeighborsAfter(_this, function() {
+        _this.setSize(sizex, sizey);
+        return _this.grid.insertAt(_this, _this.col, _this.row);
+      });
+      $ghost.css({
+        width: _this.grid.sizeToWidth(sizex),
+        height: _this.grid.sizeToHeight(sizey)
+      });
+      return DOMTile.updateChangedTiles();
+    });
+    return new SnapResizable(this.el, this.grid);
+  };
 
   DOMTile.prototype.makeDraggable = function() {
     var $el, $ghost,
@@ -659,6 +797,7 @@ DOMTile = (function(_super) {
     DOMTile.__super__.setPosition.apply(this, arguments);
     _changedPositions[this.id] = this;
     this.draggable.grid = grid;
+    this.resizable.grid = grid;
     return null;
   };
 

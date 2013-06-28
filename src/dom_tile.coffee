@@ -16,6 +16,46 @@ class DOMTile extends Tile
     el.style.position = 'absolute'
 
     @draggable = @makeDraggable()
+    @resizable = @makeResizable()
+
+  makeResizable: ->
+    $el = $(@el)
+
+    $ghost = $('<div class="xxx-draggable-ghost"></div>')
+    $ghost.css
+      position: 'absolute'
+      backgroundColor: 'blue'
+      zIndex: -1
+
+    $el.on 'xxx-resizable-mousedown', (e) =>
+      position = $el.position()
+      $ghost.css
+        left: position.left
+        top: position.top
+      .appendTo $el.parent()
+
+    $el.on 'xxx-resizable-mouseup', (e) =>
+      $el.css
+        width: $ghost.width()
+        height: $ghost.height()
+      $ghost.remove()
+
+    $el.on 'xxx-resizable-snap', (e, sizex, sizey) =>
+      maxCol = @grid.maxCol
+      if @col + sizex > maxCol
+        sizex = (maxCol - @col) + 1
+
+      @grid.collapseNeighborsAfter @, =>
+        @setSize(sizex, sizey)
+        @grid.insertAt(@, @col, @row)
+
+      $ghost.css
+        width: @grid.sizeToWidth(sizex)
+        height: @grid.sizeToHeight(sizey)
+
+      DOMTile.updateChangedTiles()
+
+    new SnapResizable(@el, @grid)
 
   makeDraggable: ->
     $el = $(@el)
@@ -75,6 +115,7 @@ class DOMTile extends Tile
 
     _changedPositions[@id] = @
     @draggable.grid = grid
+    @resizable.grid = grid
 
     null
 

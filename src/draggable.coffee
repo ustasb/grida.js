@@ -1,11 +1,5 @@
 class Draggable
 
-  @create: (el, grid) ->
-    if grid
-      new SnapDraggable(el, grid)
-    else
-      new Draggable(el)
-
   constructor: (el) ->
     @el = $(el).get(0)
 

@@ -11,6 +11,8 @@ class Tile
     @row = null
 
   setSize: (sizex, sizey) ->
+    @grid.removeTile(@) if @grid?
+
     if sizex < 0 or sizey < 0
       throw new RangeError('A size cannot be negative.')
 

@@ -85,9 +85,7 @@
       });
       describe('#sizeToWidth', function() {
         return it('converts a grid sizex to a pixel width', function() {
-          expect(function() {
-            return grid.sizeToWidth(-1);
-          }).toThrow();
+          expect(grid.sizeToWidth(-1)).toEqual(0);
           expect(grid.sizeToWidth(0)).toEqual(0);
           expect(grid.sizeToWidth(1)).toEqual(10);
           expect(grid.sizeToWidth(2)).toEqual(25);
@@ -96,9 +94,7 @@
       });
       describe('#widthToSize', function() {
         return it('converts a pixel width to a grid sizex', function() {
-          expect(function() {
-            return grid.widthToSize(-1);
-          }).toThrow();
+          expect(grid.widthToSize(-1)).toEqual(0);
           expect(grid.widthToSize(0)).toEqual(0);
           expect(grid.widthToSize(10)).toEqual(1);
           expect(grid.widthToSize(25)).toEqual(2);
@@ -107,9 +103,7 @@
       });
       describe('#sizeToHeight', function() {
         return it('converts a grid sizey to a pixel height', function() {
-          expect(function() {
-            return grid.sizeToHeight(-1);
-          }).toThrow();
+          expect(grid.sizeToHeight(-1)).toEqual(0);
           expect(grid.sizeToHeight(0)).toEqual(0);
           expect(grid.sizeToHeight(1)).toEqual(20);
           expect(grid.sizeToHeight(2)).toEqual(55);
@@ -118,9 +112,7 @@
       });
       return describe('#heightToSize', function() {
         return it('converts a pixel height to a grid sizey', function() {
-          expect(function() {
-            return grid.heightToSize(-1);
-          }).toThrow();
+          expect(grid.heightToSize(-1)).toEqual(0);
           expect(grid.heightToSize(0)).toEqual(0);
           expect(grid.heightToSize(20)).toEqual(1);
           expect(grid.heightToSize(55)).toEqual(2);
