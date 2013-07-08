@@ -215,53 +215,53 @@ SnapResizable = (function(_super) {
 
 })(Resizable);
 
-var Grid;
+var Matrix2D;
 
-Grid = (function() {
-  function Grid() {
-    this.grid = [[]];
+Matrix2D = (function() {
+  function Matrix2D() {
+    this._array2D = [[]];
   }
 
-  Grid.prototype.set = function(item, col, row, sizex, sizey) {
-    var grid, tempRow, x, y, _i, _j;
+  Matrix2D.prototype.set = function(item, col, row, sizex, sizey) {
+    var matrix, tempRow, x, y, _i, _j;
     if (sizex == null) {
       sizex = 1;
     }
     if (sizey == null) {
       sizey = 1;
     }
-    grid = this.grid;
+    matrix = this._array2D;
     if (col < 0 || row < 0 || sizex < 0 || sizey < 0) {
-      throw 'col, row, sizex and sizey cannot be negative.';
+      throw new RangeError('col, row, sizex and sizey cannot be negative.');
     }
     for (y = _i = 0; _i < sizey; y = _i += 1) {
       tempRow = row + y;
-      if (!grid[tempRow]) {
-        grid[tempRow] = [];
+      if (matrix[tempRow] === void 0) {
+        matrix[tempRow] = [];
       }
       for (x = _j = 0; _j < sizex; x = _j += 1) {
-        grid[tempRow][col + x] = item;
+        matrix[tempRow][col + x] = item;
       }
     }
     return null;
   };
 
-  Grid.prototype.get = function(col, row, sizex, sizey) {
-    var grid, inArray, item, items, tempRow, x, y, _i, _j;
+  Matrix2D.prototype.get = function(col, row, sizex, sizey) {
+    var inArray, item, items, matrix, tempRow, x, y, _i, _j;
     if (sizex == null) {
       sizex = 1;
     }
     if (sizey == null) {
       sizey = 1;
     }
-    grid = this.grid;
+    matrix = this._array2D;
     inArray = $.inArray;
     items = [];
     for (y = _i = 0; _i < sizey; y = _i += 1) {
       tempRow = row + y;
-      if (grid[tempRow]) {
+      if (matrix[tempRow]) {
         for (x = _j = 0; _j < sizex; x = _j += 1) {
-          item = grid[tempRow][col + x];
+          item = matrix[tempRow][col + x];
           if ((item != null) && inArray(item, items) === -1) {
             items.push(item);
           }
@@ -271,21 +271,24 @@ Grid = (function() {
     return items;
   };
 
-  Grid.prototype.clear = function(col, row, sizex, sizey, specificItem) {
-    var grid, tempRow, x, y, _i, _j;
+  Matrix2D.prototype.clear = function(col, row, sizex, sizey, filterItem) {
+    var matrix, tempRow, x, y, _i, _j;
     if (sizex == null) {
       sizex = 1;
     }
     if (sizey == null) {
       sizey = 1;
     }
-    grid = this.grid;
+    if (filterItem == null) {
+      filterItem = void 0;
+    }
+    matrix = this._array2D;
     for (y = _i = 0; _i < sizey; y = _i += 1) {
       tempRow = row + y;
-      if (grid[tempRow]) {
+      if (matrix[tempRow]) {
         for (x = _j = 0; _j < sizex; x = _j += 1) {
-          if (specificItem === void 0 || specificItem === grid[tempRow][col + x]) {
-            delete grid[tempRow][col + x];
+          if (filterItem === void 0 || filterItem === matrix[tempRow][col + x]) {
+            delete matrix[tempRow][col + x];
           }
         }
       }
@@ -293,7 +296,7 @@ Grid = (function() {
     return null;
   };
 
-  return Grid;
+  return Matrix2D;
 
 })();
 
@@ -301,7 +304,7 @@ var TileGrid;
 
 TileGrid = (function() {
   function TileGrid() {
-    this.grid = new Grid;
+    this.grid = new Matrix2D;
     this.tiles = [];
   }
 

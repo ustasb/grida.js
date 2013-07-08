@@ -14,7 +14,7 @@ describe 'A TileGrid class', ->
 
   beforeEach ->
     grid = new TileGrid(10, 20, 5, 15)
-    gridArray = grid.grid.grid
+    gridArray = grid.grid._array2D
     t1x1 = new Tile(1, 1)
     t1x2 = new Tile(1, 2)
     t1x3 = new Tile(1, 3)

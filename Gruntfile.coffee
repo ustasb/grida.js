@@ -4,7 +4,7 @@ module.exports = (grunt) ->
     'src/constants.coffee'
     'src/draggable.coffee'
     'src/resizable.coffee'
-    'src/grid.coffee'
+    'src/matrix_2D.coffee'
     'src/tile_grid.coffee'
     'src/dom_tile_grid.coffee'
     'src/tile.coffee'

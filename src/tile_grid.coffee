@@ -2,7 +2,7 @@
 class TileGrid
 
   constructor: ->
-    @grid = new Grid
+    @grid = new Matrix2D
     @tiles = []
 
   validateTile: (tile) ->
