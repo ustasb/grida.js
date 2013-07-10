@@ -2,8 +2,56 @@
 class TileGrid
 
   constructor: ->
-    @grid = new Matrix2D
-    @tiles = []
+    @_matrix = new Matrix2D
+    @_tiles = []
+
+  set: (tile, col, row) ->
+    @_matrix.set(tile, col, row, tile.sizex, tile.sizey)
+    tile.updatePos(@, col, row)
+
+    null
+
+  remove: (tile, updateTile = true) ->
+    @_matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
+    tile.updatePos() if updateTile
+
+    null
+
+  insert: (tile, col, row) ->
+    @remove(tile, false)
+
+    # Tiles are in row-order (smaller rows first).
+    obstructingTiles = @_matrix.get(col, row, tile.sizex, tile.sizey)
+
+    for oTile in obstructingTiles
+      dy = (row + tile.sizey) - oTile.row
+      @insert(oTile, oTile.col, oTile.row + 1) while --dy >= 0
+
+    @set(tile, col, row)
+
+    null
+
+  floatUp: (tile) ->
+    newRow = tile.row
+
+    while newRow > 0 and
+          @_matrix.get(tile.col, newRow - 1, tile.sizex, 1).length is 0
+      newRow -= 1
+
+    if newRow is tile.row
+      false
+    else
+      @remove(tile, false)
+      @set(tile, tile.col, newRow)
+      true
+
+  aboveNeighbors: (tile) ->
+    @_matrix.get(tile.col, tile.row - 1, tile.sizex, 1)
+
+  belowNeighbors: (tile) ->
+    @_matrix.get(tile.col, tile.row + 1, tile.sizex, 1)
+
+###
 
   validateTile: (tile) ->
     if tile.grid isnt @
@@ -147,3 +195,4 @@ class TileGrid
     @grid.set(focusTile, focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey)
 
     false
+###

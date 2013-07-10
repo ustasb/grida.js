@@ -295,171 +295,215 @@
 
   TileGrid = (function() {
     function TileGrid() {
-      this.grid = new Matrix2D;
-      this.tiles = [];
+      this._matrix = new Matrix2D;
+      this._tiles = [];
     }
 
-    TileGrid.prototype.validateTile = function(tile) {
-      if (tile.grid !== this) {
-        throw new Error("The tile does not belong to this grid!");
+    TileGrid.prototype.set = function(tile, col, row) {
+      this._matrix.set(tile, col, row, tile.sizex, tile.sizey);
+      tile.updatePos(this, col, row);
+      return null;
+    };
+
+    TileGrid.prototype.remove = function(tile, updateTile) {
+      if (updateTile == null) {
+        updateTile = true;
+      }
+      this._matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
+      if (updateTile) {
+        tile.updatePos();
       }
       return null;
     };
 
-    TileGrid.prototype.setTile = function(tile, col, row) {
-      tile.setPosition(this, col, row);
-      this.tiles.push(tile);
-      this.grid.set(tile, col, row, tile.sizex, tile.sizey);
-      return null;
-    };
-
-    TileGrid.prototype.removeTile = function(tile) {
-      var index;
-      index = $.inArray(tile, this.tiles);
-      if (index !== -1) {
-        this.grid.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
-        this.tiles.splice(index, 1);
-      }
-      return null;
-    };
-
-    TileGrid.prototype.sortTilesByPos = function() {
-      this.tiles.sort(function(a, b) {
-        if (a.row < b.row) {
-          return -1;
-        }
-        if (a.row === b.row && a.col < b.col) {
-          return -1;
-        }
-        return 1;
-      });
-      return null;
-    };
-
-    TileGrid.prototype.insertAt = function(focusTile, col, row) {
-      var dy, obstructingTiles, tile, _i;
-      obstructingTiles = this.grid.get(col, row, focusTile.sizex, focusTile.sizey);
-      for (_i = obstructingTiles.length - 1; _i >= 0; _i += -1) {
-        tile = obstructingTiles[_i];
-        if (tile === focusTile) {
-          continue;
-        }
-        dy = (row + focusTile.sizey) - tile.row;
+    TileGrid.prototype.insert = function(tile, col, row) {
+      var dy, oTile, obstructingTiles, _i, _len;
+      this.remove(tile, false);
+      obstructingTiles = this._matrix.get(col, row, tile.sizex, tile.sizey);
+      for (_i = 0, _len = obstructingTiles.length; _i < _len; _i++) {
+        oTile = obstructingTiles[_i];
+        dy = (row + tile.sizey) - oTile.row;
         while (--dy >= 0) {
-          this.insertAt(tile, tile.col, tile.row + 1);
+          this.insert(oTile, oTile.col, oTile.row + 1);
         }
       }
-      this.setTile(focusTile, col, row);
+      this.set(tile, col, row);
       return null;
     };
 
-    TileGrid.prototype.getLowestAboveRow = function(tile, col, row) {
-      var lowestRow, sizex;
-      if (col == null) {
-        col = tile.col;
-      }
-      if (row == null) {
-        row = tile.row;
-      }
-      this.validateTile(tile);
-      lowestRow = row;
-      sizex = tile.sizex;
-      while (lowestRow > 0 && this.grid.get(col, lowestRow - 1, sizex, 1).length === 0) {
-        lowestRow -= 1;
-      }
-      return lowestRow;
-    };
-
-    TileGrid.prototype.collapseAboveEmptySpace = function(tile) {
+    TileGrid.prototype.floatUp = function(tile) {
       var newRow;
-      this.validateTile(tile);
-      newRow = this.getLowestAboveRow(tile);
-      if (newRow !== tile.row) {
-        this.setTile(tile, tile.col, newRow);
+      newRow = tile.row;
+      while (newRow > 0 && this._matrix.get(tile.col, newRow - 1, tile.sizex, 1).length === 0) {
+        newRow -= 1;
       }
-      return null;
-    };
-
-    TileGrid.prototype.collapseNeighborsAfter = function(tile, callback) {
-      var belowNeighbors, neighbor, _i, _len,
-        _this = this;
-      this.validateTile(tile);
-      belowNeighbors = this.grid.get(tile.col, tile.row + tile.sizey, tile.sizex, 1);
-      if (callback != null) {
-        callback();
-      }
-      for (_i = 0, _len = belowNeighbors.length; _i < _len; _i += 1) {
-        neighbor = belowNeighbors[_i];
-        this.collapseNeighborsAfter(neighbor, function() {
-          return _this.collapseAboveEmptySpace(neighbor);
-        });
-      }
-      return null;
-    };
-
-    TileGrid.prototype.attemptInsertAt = function(focusTile, col, row) {
-      var aboveTiles, lowestRow, newRow, oTile, obstructingTiles, swapOccured, tile, _i, _j, _k, _len, _len1, _len2,
-        _this = this;
-      if (row === 0) {
-        this.collapseNeighborsAfter(focusTile, function() {
-          return _this.insertAt(focusTile, col, row);
-        });
+      if (newRow === tile.row) {
+        return false;
+      } else {
+        this.remove(tile, false);
+        this.set(tile, tile.col, newRow);
         return true;
       }
-      this.grid.clear(focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey);
-      obstructingTiles = this.grid.get(col, row, focusTile.sizex, focusTile.sizey);
-      if (row > focusTile.row) {
-        for (_i = 0, _len = obstructingTiles.length; _i < _len; _i += 1) {
-          oTile = obstructingTiles[_i];
-          if (focusTile.row + oTile.sizey === row && this.getLowestAboveRow(oTile) === focusTile.row) {
-            this.collapseNeighborsAfter(oTile, function() {
-              return _this.setTile(oTile, oTile.col, focusTile.row);
-            });
-            swapOccured = true;
-          }
-        }
-        if (swapOccured) {
-          this.collapseNeighborsAfter(focusTile, function() {
-            return _this.insertAt(focusTile, col, row);
-          });
-          return true;
-        }
-      }
-      aboveTiles = this.grid.get(col, row - 1, focusTile.sizex, 1);
-      if (aboveTiles.length === 0 && obstructingTiles.length === 0) {
-        newRow = this.getLowestAboveRow(focusTile, col, row);
-        this.collapseNeighborsAfter(focusTile, function() {
-          return _this.setTile(focusTile, col, newRow);
-        });
-        return true;
-      }
-      for (_j = 0, _len1 = aboveTiles.length; _j < _len1; _j += 1) {
-        tile = aboveTiles[_j];
-        if (tile.row + tile.sizey === row) {
-          this.collapseNeighborsAfter(focusTile, function() {
-            return _this.insertAt(focusTile, col, row);
-          });
-          return true;
-        }
-      }
-      for (_k = 0, _len2 = obstructingTiles.length; _k < _len2; _k += 1) {
-        tile = obstructingTiles[_k];
-        lowestRow = this.getLowestAboveRow(tile);
-        if (lowestRow + tile.sizey === row) {
-          this.collapseNeighborsAfter(tile, function() {
-            _this.setTile(tile, tile.col, lowestRow);
-            return _this.insertAt(focusTile, col, row);
-          });
-          return true;
-        }
-      }
-      this.grid.set(focusTile, focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey);
-      return false;
+    };
+
+    TileGrid.prototype.aboveNeighbors = function(tile) {
+      return this._matrix.get(tile.col, tile.row - 1, tile.sizex, 1);
+    };
+
+    TileGrid.prototype.belowNeighbors = function(tile) {
+      return this._matrix.get(tile.col, tile.row + 1, tile.sizex, 1);
     };
 
     return TileGrid;
 
   })();
+
+  /*
+  
+    validateTile: (tile) ->
+      if tile.grid isnt @
+        throw new Error("The tile does not belong to this grid!")
+  
+      null
+  
+    setTile: (tile, col, row) ->
+      tile.setPosition(@, col, row)
+  
+      @tiles.push(tile)
+  
+      @grid.set(tile, col, row, tile.sizex, tile.sizey)
+  
+      null
+  
+    removeTile: (tile) ->
+      index = $.inArray(tile, @tiles)
+  
+      if index isnt -1
+        @grid.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
+        @tiles.splice(index, 1)
+  
+      null
+  
+    sortTilesByPos: ->
+      @tiles.sort (a, b) ->
+        return -1 if a.row < b.row
+        return -1 if a.row is b.row and a.col < b.col
+        return 1
+  
+      null
+  
+    # Inserts the tile at a position and shifts down any obstructing tiles.
+    # @param focusTile [Tile]
+    # @param col, row [whole number]
+    # @return [null]
+    insertAt: (focusTile, col, row) ->
+      # Tiles are in row-order (smaller rows first).
+      obstructingTiles = @grid.get(col, row, focusTile.sizex, focusTile.sizey)
+  
+      for tile in obstructingTiles by -1
+        continue if tile is focusTile
+        dy = (row + focusTile.sizey) - tile.row
+        @insertAt(tile, tile.col, tile.row + 1) while --dy >= 0
+  
+      @setTile(focusTile, col, row)
+  
+      null
+  
+    # Finds the lowest above row that the tile could shift up to.
+    # @param tile [Tile]
+    # @param col, row [whole number]
+    # @return [integer]
+    getLowestAboveRow: (tile, col = tile.col, row = tile.row) ->
+      @validateTile(tile)
+  
+      lowestRow = row
+      sizex = tile.sizex
+  
+      while lowestRow > 0 and @grid.get(col, lowestRow - 1, sizex, 1).length is 0
+        lowestRow -= 1
+  
+      lowestRow
+  
+    # Moves the tile upwards until it encounters a barrier.
+    # @param tile [Tile]
+    # @return [null]
+    collapseAboveEmptySpace: (tile) ->
+      @validateTile(tile)
+  
+      newRow = @getLowestAboveRow(tile)
+  
+      if newRow isnt tile.row
+        @setTile(tile, tile.col, newRow)
+  
+      null
+  
+    # Calls the callback and recursively shifts all old below neighbors up.
+    # @param tile [Tile]
+    # @param callback [function]
+    # @return [null]
+    collapseNeighborsAfter: (tile, callback) ->
+      @validateTile(tile)
+  
+      belowNeighbors = @grid.get(tile.col, tile.row + tile.sizey, tile.sizex, 1)
+  
+      callback() if callback?
+  
+      for neighbor in belowNeighbors by 1
+        @collapseNeighborsAfter neighbor, =>
+          @collapseAboveEmptySpace(neighbor)
+  
+      null
+  
+    # Tries to insert a tile at a location while maintaining the invariant:
+    #
+    #   Each tile must have an above neighbor tile except for tiles in row 0.
+    #
+    # @param focusTile [Tile]
+    # @param col, row [whole number]
+    # @return [boolean] success status
+    attemptInsertAt: (focusTile, col, row) ->
+      if row is 0
+        @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
+        return true
+  
+      @grid.clear(focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey)
+      obstructingTiles = @grid.get(col, row, focusTile.sizex, focusTile.sizey)
+  
+      if row > focusTile.row
+        for oTile in obstructingTiles by 1
+          if focusTile.row + oTile.sizey is row and @getLowestAboveRow(oTile) is focusTile.row
+            @collapseNeighborsAfter oTile, => @setTile(oTile, oTile.col, focusTile.row)
+            swapOccured = true
+  
+        if swapOccured
+          @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
+          return true
+  
+      aboveTiles = @grid.get(col, row - 1, focusTile.sizex, 1)
+  
+      if aboveTiles.length is 0 and obstructingTiles.length is 0
+        newRow = @getLowestAboveRow(focusTile, col, row)
+        @collapseNeighborsAfter focusTile, => @setTile(focusTile, col, newRow)
+        return true
+  
+      for tile in aboveTiles by 1
+        if tile.row + tile.sizey is row
+          @collapseNeighborsAfter focusTile, => @insertAt(focusTile, col, row)
+          return true
+  
+      for tile in obstructingTiles by 1
+        lowestRow = @getLowestAboveRow(tile)
+        if lowestRow + tile.sizey is row
+          @collapseNeighborsAfter tile, =>
+            @setTile(tile, tile.col, lowestRow)
+            @insertAt(focusTile, col, row)
+          return true
+  
+      @grid.set(focusTile, focusTile.col, focusTile.row, focusTile.sizex, focusTile.sizey)
+  
+      false
+  */
+
 
   DOMTileGrid = (function(_super) {
     __extends(DOMTileGrid, _super);
@@ -607,39 +651,25 @@
         sizey = 1;
       }
       this.id = _count++;
-      this.setSize(sizex, sizey);
-      this.grid = null;
-      this.col = null;
-      this.row = null;
+      this.updatePos();
+      this.updateSize(sizex, sizey);
     }
 
-    Tile.prototype.setSize = function(sizex, sizey) {
-      if (this.grid != null) {
-        this.grid.removeTile(this);
+    Tile.prototype.updatePos = function(grid, col, row) {
+      this.grid = grid;
+      this.col = col;
+      this.row = row;
+      if (grid == null) {
+        return this.grid = this.col = this.row = null;
       }
+    };
+
+    Tile.prototype.updateSize = function(sizex, sizey) {
       if (sizex < 0 || sizey < 0) {
         throw new RangeError('A size cannot be negative.');
       }
       this.sizex = sizex;
       return this.sizey = sizey;
-    };
-
-    Tile.prototype.setPosition = function(grid, col, row) {
-      this.releasePosition();
-      this.grid = grid;
-      this.col = col;
-      this.row = row;
-      return null;
-    };
-
-    Tile.prototype.releasePosition = function() {
-      if (this.grid != null) {
-        this.grid.removeTile(this);
-      }
-      this.grid = null;
-      this.col = null;
-      this.row = null;
-      return null;
     };
 
     return Tile;
