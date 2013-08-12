@@ -207,7 +207,7 @@ describe 'A Matrix2D class', ->
         [u, u, u, u, u]
       ])
 
-    it 'only removes items equal to filterItem if defined', ->
+    it 'only removes items equal to targetItem if defined', ->
       mat.set(0, 0, 0, 5, 5)
       mat.set(1, 1, 4, 3, 1)
       mat.set(2, 0, 1, 2, 1)

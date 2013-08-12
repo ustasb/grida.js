@@ -1,5 +1,5 @@
 # Represents a 2D matrix.
-# Row/Column indices start at 0.
+# Row/column indices start at 0.
 class Matrix2D
 
   constructor: ->
@@ -46,9 +46,9 @@ class Matrix2D
 
   # Removes items in a matrix area.
   # @param col, row, sizex, sizey [whole number]
-  # @param filterItem [anything] If defined, only items equal to it are removed.
+  # @param targetItem [anything] If defined, only items equal to it are removed.
   # @return [null]
-  clear: (col, row, sizex = 1, sizey = 1, filterItem = undefined) ->
+  clear: (col, row, sizex = 1, sizey = 1, targetItem = undefined) ->
     matrix = @_array2D
 
     for y in [0...sizey] by 1
@@ -56,7 +56,7 @@ class Matrix2D
 
       if matrix[tempRow]
         for x in [0...sizex] by 1
-          if filterItem is undefined or filterItem is matrix[tempRow][col + x]
+          if targetItem is undefined or targetItem is matrix[tempRow][col + x]
             delete matrix[tempRow][col + x]
 
     null

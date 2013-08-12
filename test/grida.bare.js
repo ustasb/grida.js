@@ -271,7 +271,7 @@ Matrix2D = (function() {
     return items;
   };
 
-  Matrix2D.prototype.clear = function(col, row, sizex, sizey, filterItem) {
+  Matrix2D.prototype.clear = function(col, row, sizex, sizey, targetItem) {
     var matrix, tempRow, x, y, _i, _j;
     if (sizex == null) {
       sizex = 1;
@@ -279,15 +279,15 @@ Matrix2D = (function() {
     if (sizey == null) {
       sizey = 1;
     }
-    if (filterItem == null) {
-      filterItem = void 0;
+    if (targetItem == null) {
+      targetItem = void 0;
     }
     matrix = this._array2D;
     for (y = _i = 0; _i < sizey; y = _i += 1) {
       tempRow = row + y;
       if (matrix[tempRow]) {
         for (x = _j = 0; _j < sizex; x = _j += 1) {
-          if (filterItem === void 0 || filterItem === matrix[tempRow][col + x]) {
+          if (targetItem === void 0 || targetItem === matrix[tempRow][col + x]) {
             delete matrix[tempRow][col + x];
           }
         }
@@ -666,7 +666,7 @@ Tile = (function() {
       sizey = 1;
     }
     this.id = _count++;
-    this.updatePos();
+    this.grid = this.col = this.row = null;
     this.updateSize(sizex, sizey);
   }
 
@@ -674,14 +674,11 @@ Tile = (function() {
     this.grid = grid;
     this.col = col;
     this.row = row;
-    if (grid == null) {
-      return this.grid = this.col = this.row = null;
-    }
   };
 
   Tile.prototype.updateSize = function(sizex, sizey) {
-    if (sizex < 0 || sizey < 0) {
-      throw new RangeError('A size cannot be negative.');
+    if (sizex <= 0 || sizey <= 0) {
+      throw new RangeError('A size must be > 0');
     }
     this.sizex = sizex;
     return this.sizey = sizey;

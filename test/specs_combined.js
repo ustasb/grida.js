@@ -265,7 +265,7 @@
         mat.clear(-2, -2, 10, 10);
         return expect(mat._array2D).toLookLike([[u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u], [u, u, u, u, u]]);
       });
-      return it('only removes items equal to filterItem if defined', function() {
+      return it('only removes items equal to targetItem if defined', function() {
         mat.set(0, 0, 0, 5, 5);
         mat.set(1, 1, 4, 3, 1);
         mat.set(2, 0, 1, 2, 1);
