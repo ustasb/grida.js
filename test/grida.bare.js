@@ -305,38 +305,33 @@ var TileGrid;
 TileGrid = (function() {
   function TileGrid() {
     this._matrix = new Matrix2D;
-    this._tiles = [];
+    this._tiles = {};
   }
 
-  TileGrid.prototype.set = function(tile, col, row) {
-    this._matrix.set(tile, col, row, tile.sizex, tile.sizey);
-    tile.updatePos(this, col, row);
-    return null;
+  TileGrid.prototype._set = function(tile, newCol, newRow) {
+    this._matrix.set(tile, newCol, newRow, tile.sizex, tile.sizey);
+    this._tiles[tile.id] = tile;
+    return tile.setPos(this, newCol, newRow);
   };
 
-  TileGrid.prototype.remove = function(tile, updateTile) {
-    if (updateTile == null) {
-      updateTile = true;
-    }
+  TileGrid.prototype.remove = function(tile) {
     this._matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
-    if (updateTile) {
-      tile.updatePos();
-    }
-    return null;
+    delete this._tiles[tile.id];
+    return tile.setPos(null);
   };
 
-  TileGrid.prototype.insert = function(tile, col, row) {
+  TileGrid.prototype.insert = function(tile, newCol, newRow) {
     var dy, oTile, obstructingTiles, _i, _len;
-    this.remove(tile, false);
-    obstructingTiles = this._matrix.get(col, row, tile.sizex, tile.sizey);
-    for (_i = 0, _len = obstructingTiles.length; _i < _len; _i++) {
+    this._matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
+    obstructingTiles = this._matrix.get(newCol, newRow, tile.sizex, tile.sizey);
+    for (_i = 0, _len = obstructingTiles.length; _i < _len; _i += 1) {
       oTile = obstructingTiles[_i];
-      dy = (row + tile.sizey) - oTile.row;
+      dy = (newRow + tile.sizey) - oTile.row;
       while (--dy >= 0) {
         this.insert(oTile, oTile.col, oTile.row + 1);
       }
     }
-    this.set(tile, col, row);
+    this._set(tile, newCol, newRow);
     return null;
   };
 
@@ -349,8 +344,8 @@ TileGrid = (function() {
     if (newRow === tile.row) {
       return false;
     } else {
-      this.remove(tile, false);
-      this.set(tile, tile.col, newRow);
+      this._matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile);
+      this._set(tile, tile.col, newRow);
       return true;
     }
   };
@@ -368,13 +363,6 @@ TileGrid = (function() {
 })();
 
 /*
-
-  validateTile: (tile) ->
-    if tile.grid isnt @
-      throw new Error("The tile does not belong to this grid!")
-
-    null
-
   setTile: (tile, col, row) ->
     tile.setPosition(@, col, row)
 
@@ -665,23 +653,29 @@ Tile = (function() {
     if (sizey == null) {
       sizey = 1;
     }
-    this.id = _count++;
-    this.grid = this.col = this.row = null;
-    this.updateSize(sizex, sizey);
+    this.id = ++_count;
+    this.setPos(null);
+    this.setSize(sizex, sizey);
   }
 
-  Tile.prototype.updatePos = function(grid, col, row) {
-    this.grid = grid;
-    this.col = col;
-    this.row = row;
+  Tile.prototype.setPos = function(grid, col, row) {
+    this.grid = grid != null ? grid : null;
+    if (this.grid === null) {
+      this.col = this.row = null;
+    } else {
+      this.col = col;
+      this.row = row;
+    }
+    return null;
   };
 
-  Tile.prototype.updateSize = function(sizex, sizey) {
+  Tile.prototype.setSize = function(sizex, sizey) {
     if (sizex <= 0 || sizey <= 0) {
       throw new RangeError('A size must be > 0');
     }
     this.sizex = sizex;
-    return this.sizey = sizey;
+    this.sizey = sizey;
+    return null;
   };
 
   return Tile;

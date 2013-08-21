@@ -3,34 +3,40 @@ class TileGrid
 
   constructor: ->
     @_matrix = new Matrix2D
-    @_tiles = []
+    @_tiles = {}
 
-  set: (tile, col, row) ->
-    @_matrix.set(tile, col, row, tile.sizex, tile.sizey)
-    tile.updatePos(@, col, row)
+  # Sets a tile at a grid area and updates the tile.
+  # @return [null]
+  _set: (tile, newCol, newRow) ->
+    @_matrix.set(tile, newCol, newRow, tile.sizex, tile.sizey)
+    @_tiles[tile.id] = tile
+    tile.setPos(@, newCol, newRow)
 
-    null
-
-  remove: (tile, updateTile = true) ->
+  # Removes a tile from the grid and updates the tile.
+  # @return [null]
+  remove: (tile) ->
     @_matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
-    tile.updatePos() if updateTile
+    delete @_tiles[tile.id]
+    tile.setPos(null)
 
-    null
-
-  insert: (tile, col, row) ->
-    @remove(tile, false)
+  # Sets a tile at a position and shifts down all obstructing tiles recursively.
+  # @return [null]
+  insert: (tile, newCol, newRow) ->
+    @_matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
 
     # Tiles are in row-order (smaller rows first).
-    obstructingTiles = @_matrix.get(col, row, tile.sizex, tile.sizey)
+    obstructingTiles = @_matrix.get(newCol, newRow, tile.sizex, tile.sizey)
 
-    for oTile in obstructingTiles
-      dy = (row + tile.sizey) - oTile.row
+    for oTile in obstructingTiles by 1
+      dy = (newRow + tile.sizey) - oTile.row
       @insert(oTile, oTile.col, oTile.row + 1) while --dy >= 0
 
-    @set(tile, col, row)
+    @_set(tile, newCol, newRow)
 
     null
 
+  # Moves a tile upward until an obstacle is reached.
+  # @return [Boolean]
   floatUp: (tile) ->
     newRow = tile.row
 
@@ -41,24 +47,19 @@ class TileGrid
     if newRow is tile.row
       false
     else
-      @remove(tile, false)
-      @set(tile, tile.col, newRow)
+      @_matrix.clear(tile.col, tile.row, tile.sizex, tile.sizey, tile)
+      @_set(tile, tile.col, newRow)
       true
 
+  # @return [Array]
   aboveNeighbors: (tile) ->
     @_matrix.get(tile.col, tile.row - 1, tile.sizex, 1)
 
+  # @return [Array]
   belowNeighbors: (tile) ->
     @_matrix.get(tile.col, tile.row + 1, tile.sizex, 1)
 
 ###
-
-  validateTile: (tile) ->
-    if tile.grid isnt @
-      throw new Error("The tile does not belong to this grid!")
-
-    null
-
   setTile: (tile, col, row) ->
     tile.setPosition(@, col, row)
 

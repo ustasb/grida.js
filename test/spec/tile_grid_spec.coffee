@@ -25,6 +25,10 @@ describe 'A TileGrid class', ->
     t3x2 = new Tile(3, 2)
     t3x3 = new Tile(3, 3)
 
+  describe '#_set', ->
+    it 'sets a tile at a grid area and updates the tile.', ->
+
+
   ###
   describe '#getLowestAboveRow', ->
 

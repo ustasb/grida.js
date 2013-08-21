@@ -331,6 +331,9 @@
       t3x2 = new Tile(3, 2);
       return t3x3 = new Tile(3, 3);
     });
+    describe('#_set', function() {
+      return it('sets a tile at a grid area and updates the tile.', function() {});
+    });
     /*
     describe '#getLowestAboveRow', ->
     
@@ -462,6 +465,51 @@
 }).call(this);
 
 (function() {
-
+  describe('A Tile class', function() {
+    var GRID, tile;
+    GRID = 'grid';
+    tile = void 0;
+    beforeEach(function() {
+      return tile = new Tile;
+    });
+    describe('#setPos', function() {
+      it('sets the @grid, @col and @row attributes', function() {
+        tile.setPos(GRID, 1, 2);
+        expect(tile.grid).toBe(GRID);
+        expect(tile.col).toBe(1);
+        return expect(tile.row).toBe(2);
+      });
+      return it('nulls the @col and @row attributes if @grid is null', function() {
+        tile.setPos(null);
+        expect(tile.grid).toBe(null);
+        expect(tile.col).toBe(null);
+        return expect(tile.row).toBe(null);
+      });
+    });
+    return describe('#setSize', function() {
+      it('sets the @sizex and @sizey attributes', function() {
+        tile.setSize(1, 2);
+        expect(tile.sizex).toBe(1);
+        return expect(tile.sizey).toBe(2);
+      });
+      return it('throws an error if a size is <= 0', function() {
+        expect(function() {
+          return tile.setSize(0, 0);
+        }).toThrow();
+        expect(function() {
+          return tile.setSize(1, 0);
+        }).toThrow();
+        expect(function() {
+          return tile.setSize(0, 1);
+        }).toThrow();
+        expect(function() {
+          return tile.setSize(-1, 1);
+        }).toThrow();
+        return expect(function() {
+          return tile.setSize(1, -1);
+        }).toThrow();
+      });
+    });
+  });
 
 }).call(this);
