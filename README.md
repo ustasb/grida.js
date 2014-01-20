@@ -2,4 +2,4 @@
 
 A drag-and-drop, multi-column grid with resizable tiles.
 
-**Currently in development!**
+##UPDATE: Abandoned for now. [Gridster](http://gridster.net) now supports resizable tiles.
